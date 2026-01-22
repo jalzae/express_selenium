@@ -4,6 +4,67 @@
     "elements": [
       {
         "description": "",
+        "id": "sum-feature;sum-feature",
+        "keyword": "Scenario",
+        "line": 3,
+        "name": "Sum Feature",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 4,
+            "name": "I have entered 50 into the calculator",
+            "match": {
+              "location": "features/example/example.ts:12"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 618458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 5,
+            "name": "I have entered 70 into the calculator",
+            "match": {
+              "location": "features/example/example.ts:16"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 53582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 6,
+            "name": "I press add",
+            "match": {
+              "location": "features/example/example.ts:20"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 45999
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "sum-feature",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Sum Feature",
+    "tags": [],
+    "uri": "features/example/example.feature"
+  },
+  {
+    "description": "",
+    "elements": [
+      {
+        "description": "",
         "id": "google-search;open-google-and-search-for-various-terms",
         "keyword": "Scenario Outline",
         "line": 10,
@@ -18,8 +79,9 @@
               "location": "features/google/google.ts:6"
             },
             "result": {
-              "status": "passed",
-              "duration": 2577247042
+              "status": "failed",
+              "duration": 11733750,
+              "error_message": "browserType.launch: Executable doesn't exist at /Users/applemacbookprom2/Library/Caches/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-mac-arm64/chrome-headless-shell\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/src/playwright.ts:91:43\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/src/playwright.ts:8:71\n    at __awaiter (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/src/playwright.ts:4:12)\n    at openBrowser (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/src/playwright.ts:114:12)\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/repository/google.ts:8:27\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/repository/google.ts:8:71\n    at __awaiter (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/repository/google.ts:4:12)\n    at startWebDriver (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/repository/google.ts:20:12)\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:7:22\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:8:71\n    at __awaiter (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:4:12)\n    at World.<anonymous> (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:6:42)"
             }
           },
           {
@@ -31,8 +93,8 @@
               "location": "features/google/google.ts:11"
             },
             "result": {
-              "status": "passed",
-              "duration": 213150375
+              "status": "skipped",
+              "duration": 0
             }
           },
           {
@@ -44,9 +106,8 @@
               "location": "features/google/google.ts:15"
             },
             "result": {
-              "status": "failed",
-              "duration": 10884958,
-              "error_message": "AssertionError [ERR_ASSERTION]: Expected title to include \"webdriver\", but it was \"Google\".\n    + expected - actual\n\n    -false\n    +true\n\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:17:8\n    at fulfilled (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:5:58)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+              "status": "skipped",
+              "duration": 0
             }
           }
         ],
@@ -69,8 +130,9 @@
               "location": "features/google/google.ts:6"
             },
             "result": {
-              "status": "passed",
-              "duration": 1732453625
+              "status": "failed",
+              "duration": 1778000,
+              "error_message": "browserType.launch: Executable doesn't exist at /Users/applemacbookprom2/Library/Caches/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-mac-arm64/chrome-headless-shell\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/src/playwright.ts:91:43\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/src/playwright.ts:8:71\n    at __awaiter (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/src/playwright.ts:4:12)\n    at openBrowser (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/src/playwright.ts:114:12)\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/repository/google.ts:8:27\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/repository/google.ts:8:71\n    at __awaiter (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/repository/google.ts:4:12)\n    at startWebDriver (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/repository/google.ts:20:12)\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:7:22\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:8:71\n    at __awaiter (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:4:12)\n    at World.<anonymous> (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:6:42)"
             }
           },
           {
@@ -82,8 +144,8 @@
               "location": "features/google/google.ts:11"
             },
             "result": {
-              "status": "passed",
-              "duration": 118854042
+              "status": "skipped",
+              "duration": 0
             }
           },
           {
@@ -95,9 +157,8 @@
               "location": "features/google/google.ts:15"
             },
             "result": {
-              "status": "failed",
-              "duration": 30581874,
-              "error_message": "AssertionError [ERR_ASSERTION]: Expected title to include \"blogspot\", but it was \"Google\".\n    + expected - actual\n\n    -false\n    +true\n\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:17:8\n    at fulfilled (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:5:58)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+              "status": "skipped",
+              "duration": 0
             }
           }
         ],
@@ -120,8 +181,9 @@
               "location": "features/google/google.ts:6"
             },
             "result": {
-              "status": "passed",
-              "duration": 4261041000
+              "status": "failed",
+              "duration": 7320540,
+              "error_message": "browserType.launch: Executable doesn't exist at /Users/applemacbookprom2/Library/Caches/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-mac-arm64/chrome-headless-shell\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/src/playwright.ts:91:43\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/src/playwright.ts:8:71\n    at __awaiter (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/src/playwright.ts:4:12)\n    at openBrowser (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/src/playwright.ts:114:12)\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/repository/google.ts:8:27\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/repository/google.ts:8:71\n    at __awaiter (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/repository/google.ts:4:12)\n    at startWebDriver (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/repository/google.ts:20:12)\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:7:22\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:8:71\n    at __awaiter (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:4:12)\n    at World.<anonymous> (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:6:42)"
             }
           },
           {
@@ -133,8 +195,8 @@
               "location": "features/google/google.ts:11"
             },
             "result": {
-              "status": "passed",
-              "duration": 142384334
+              "status": "skipped",
+              "duration": 0
             }
           },
           {
@@ -146,8 +208,8 @@
               "location": "features/google/google.ts:15"
             },
             "result": {
-              "status": "passed",
-              "duration": 930232874
+              "status": "skipped",
+              "duration": 0
             }
           }
         ],

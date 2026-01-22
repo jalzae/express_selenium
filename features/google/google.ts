@@ -1,5 +1,5 @@
 import assert from "assert";
-import { startWebDriver, openGoogle, searchKeyword, getTitle, quitWebDriver } from '../../src/google'
+import { startWebDriver, openGoogle, searchKeyword, getTitle, quitWebDriver } from '~/repository/google'
 import { Given, When, Then } from "@cucumber/cucumber";
 
 

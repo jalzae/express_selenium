@@ -4,6 +4,7 @@ const reporter = require('cucumber-html-reporter');
 module.exports = {
   default: [
     "--require-module ts-node/register",
+    "--require-module tsconfig-paths/register",
     "--require features/**/*.ts",
     "--format json:cucumber-report.json",
   ].join(" "),

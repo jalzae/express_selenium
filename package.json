@@ -42,6 +42,7 @@
     "@wdio/spec-reporter": "^8.18.1",
     "@wdio/testingbot-service": "^8.18.2",
     "appium-uiautomator2-driver": "^2.31.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.3.3",
     "wdio-html-reporter": "^1.0.2"
   }
