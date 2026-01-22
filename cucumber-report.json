@@ -19,7 +19,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 192459
+              "duration": 179208
             }
           },
           {
@@ -32,7 +32,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 35666
+              "duration": 22624
             }
           },
           {
@@ -45,7 +45,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 48250
+              "duration": 21874
             }
           }
         ],
@@ -80,7 +80,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3547211750
+              "duration": 3171519458
             }
           },
           {
@@ -93,7 +93,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 186407832
+              "duration": 349905125
             }
           },
           {
@@ -106,7 +106,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 1661373125
+              "duration": 3065992540
             }
           }
         ],
@@ -130,7 +130,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 1632990790
+              "duration": 2677176084
             }
           },
           {
@@ -143,7 +143,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 516895666
+              "duration": 120334084
             }
           },
           {
@@ -155,8 +155,9 @@
               "location": "features/google/google.ts:15"
             },
             "result": {
-              "status": "passed",
-              "duration": 77584208
+              "status": "failed",
+              "duration": 983861124,
+              "error_message": "AssertionError [ERR_ASSERTION]: Expected title to include \"blogspot\", but it was \"\".\n    + expected - actual\n\n    -false\n    +true\n\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:17:8\n    at fulfilled (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:5:58)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)"
             }
           }
         ],
@@ -180,7 +181,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 1557747708
+              "duration": 2547126125
             }
           },
           {
@@ -193,7 +194,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 1968752915
+              "duration": 128994916
             }
           },
           {
@@ -206,7 +207,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 61527624
+              "duration": 1495012625
             }
           }
         ],
@@ -241,7 +242,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 401666
+              "duration": 410709
             }
           },
           {
@@ -254,7 +255,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 65583
+              "duration": 64500
             }
           }
         ],
@@ -289,7 +290,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 221499
+              "duration": 171875
             }
           },
           {
@@ -302,7 +303,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 49291
+              "duration": 47167
             }
           }
         ],
