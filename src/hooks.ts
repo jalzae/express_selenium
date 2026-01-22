@@ -9,8 +9,8 @@ After(async function (scenario) {
   try {
     // Playwright screenshot
     if (page) {
-      const base64 = await page.screenshot({ encoding: 'base64' });
-      await this.attach(base64, 'image/png;base64');
+      const screenshot = await page.screenshot();
+      await this.attach(screenshot.toString('base64'), 'base64:image/png');
     }
 
     // Selenium driver screenshot (legacy/fallback)

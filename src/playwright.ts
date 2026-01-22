@@ -913,12 +913,12 @@ export async function uploadFile(page: Page, selector: string, filePath: string)
  * const result = await executeScript(page, (a, b) => a + b, 10, 20);
  * ```
  */
-export async function executeScript<R = any, Args extends any[] = any[]>(
+export async function executeScript<R = any>(
   page: Page,
-  script: (...args: Args) => R,
-  ...args: Args
+  script: (arg: any) => R,
+  arg?: any
 ): Promise<R> {
-  return await page.evaluate(script, ...args);
+  return await page.evaluate(script, arg);
 }
 
 /**
@@ -1009,9 +1009,9 @@ export async function waitUntilHidden(page: Page, selector: string, timeout = 10
  */
 export async function getCssValue(page: Page, selector: string, property: string): Promise<string> {
   const sel = await waitUntilVisible(page, selector);
-  return await page.evaluate((el: any, prop: string) => {
+  return await page.$eval(sel, (el: HTMLElement, prop: string) => {
     return window.getComputedStyle(el).getPropertyValue(prop);
-  }, sel, property);
+  }, property);
 }
 
 /**
