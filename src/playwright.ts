@@ -837,3 +837,198 @@ export async function generateHtmlReport(jsonPath = 'api_test_report.json', html
 </html>`;
   await writeFileSmart(htmlPath, html);
 }
+
+// ============================================================================
+// FORM & INPUT HELPERS
+// ============================================================================
+
+/**
+ * Check a checkbox or radio button.
+ *
+ * @param page - The Page instance
+ * @param selector - Element selector (with optional prefix)
+ *
+ * @example
+ * ```ts
+ * await check(page, 'id:terms-agree');
+ * await check(page, 'name:newsletter');
+ * ```
+ */
+export async function check(page: Page, selector: string): Promise<void> {
+  const sel = await waitUntilVisible(page, selector);
+  await page.check(sel);
+}
+
+/**
+ * Uncheck a checkbox.
+ *
+ * @param page - The Page instance
+ * @param selector - Element selector (with optional prefix)
+ *
+ * @example
+ * ```ts
+ * await uncheck(page, 'id:terms-agree');
+ * ```
+ */
+export async function uncheck(page: Page, selector: string): Promise<void> {
+  const sel = await waitUntilVisible(page, selector);
+  await page.uncheck(sel);
+}
+
+/**
+ * Upload a file using a file input element.
+ *
+ * @param page - The Page instance
+ * @param selector - File input element selector (with optional prefix)
+ * @param filePath - Absolute or relative path to the file to upload
+ *
+ * @example
+ * ```ts
+ * await uploadFile(page, 'id:avatar-input', '/path/to/image.png');
+ * await uploadFile(page, 'name:document', './files/report.pdf');
+ * ```
+ */
+export async function uploadFile(page: Page, selector: string, filePath: string): Promise<void> {
+  const sel = await waitUntilVisible(page, selector);
+  await page.setInputFiles(sel, filePath);
+}
+
+/**
+ * Execute custom JavaScript in the page context.
+ *
+ * @param page - The Page instance
+ * @param script - JavaScript function or string to execute
+ * @param args - Arguments to pass to the script (must be serializable)
+ * @returns The result of the script execution
+ *
+ * @example
+ * ```ts
+ * // Get scroll position
+ * const scrollY = await executeScript(page, () => window.scrollY);
+ *
+ * // Set a variable
+ * await executeScript(page, (value) => window.myVar = value, 'test');
+ *
+ * // Complex calculation
+ * const result = await executeScript(page, (a, b) => a + b, 10, 20);
+ * ```
+ */
+export async function executeScript<R = any, Args extends any[] = any[]>(
+  page: Page,
+  script: (...args: Args) => R,
+  ...args: Args
+): Promise<R> {
+  return await page.evaluate(script, ...args);
+}
+
+/**
+ * Clear an input or textarea field.
+ *
+ * @param page - The Page instance
+ * @param selector - Element selector (with optional prefix)
+ *
+ * @example
+ * ```ts
+ * await clearInput(page, 'id:username');
+ * ```
+ */
+export async function clearInput(page: Page, selector: string): Promise<void> {
+  const sel = await waitUntilVisible(page, selector);
+  await page.fill(sel, '');
+}
+
+/**
+ * Switch to an iframe by selector.
+ *
+ * @param page - The Page instance
+ * @param selector - iframe element selector (with optional prefix)
+ * @returns A Frame object for interacting with the iframe content
+ *
+ * @example
+ * ```ts
+ * const frame = await switchToFrame(page, 'id:my-iframe');
+ * await frame.click('button_inside_iframe');
+ * ```
+ */
+export async function switchToFrame(page: Page, selector: string): Promise<any> {
+  const sel = await waitUntilVisible(page, selector);
+  const frame = page.frameLocator(sel);
+  return frame;
+}
+
+/**
+ * Get the value of an input, select, or textarea element.
+ *
+ * @param page - The Page instance
+ * @param selector - Element selector (with optional prefix)
+ * @returns The element's value property
+ *
+ * @example
+ * ```ts
+ * const value = await getInputValue(page, 'id:email');
+ * console.log('Input value:', value);
+ * ```
+ */
+export async function getInputValue(page: Page, selector: string): Promise<string> {
+  const sel = await waitUntilVisible(page, selector);
+  return await page.inputValue(sel);
+}
+
+/**
+ * Wait for an element to be hidden (not visible).
+ *
+ * @param page - The Page instance
+ * @param selector - Element selector (with optional prefix)
+ * @param timeout - Maximum time to wait in milliseconds (default: 10000)
+ *
+ * @example
+ * ```ts
+ * await waitUntilHidden(page, 'id:loading-spinner');
+ * console.log('Spinner is now hidden');
+ * ```
+ */
+export async function waitUntilHidden(page: Page, selector: string, timeout = 10000): Promise<void> {
+  const [prefix, rawValue] = splitSelector(selector);
+  const css = toCssSelector(prefix, rawValue);
+  await page.waitForSelector(css, { state: 'hidden', timeout });
+}
+
+/**
+ * Get CSS property value of an element.
+ *
+ * @param page - The Page instance
+ * @param selector - Element selector (with optional prefix)
+ * @param property - CSS property name (e.g., 'color', 'background-color')
+ * @returns The computed CSS property value
+ *
+ * @example
+ * ```ts
+ * const color = await getCssValue(page, 'id:header', 'background-color');
+ * console.log('Header color:', color);
+ * ```
+ */
+export async function getCssValue(page: Page, selector: string, property: string): Promise<string> {
+  const sel = await waitUntilVisible(page, selector);
+  return await page.evaluate((el: any, prop: string) => {
+    return window.getComputedStyle(el).getPropertyValue(prop);
+  }, sel, property);
+}
+
+/**
+ * Get the bounding box (position and size) of an element.
+ *
+ * @param page - The Page instance
+ * @param selector - Element selector (with optional prefix)
+ * @returns Object with x, y, width, height properties
+ *
+ * @example
+ * ```ts
+ * const box = await getElementBounds(page, 'id:my-element');
+ * console.log(`Position: ${box.x}, ${box.y}`);
+ * console.log(`Size: ${box.width}x${box.height}`);
+ * ```
+ */
+export async function getElementBounds(page: Page, selector: string): Promise<{ x: number; y: number; width: number; height: number }> {
+  const sel = await waitUntilVisible(page, selector);
+  return await page.locator(sel).boundingBox() ?? { x: 0, y: 0, width: 0, height: 0 };
+}

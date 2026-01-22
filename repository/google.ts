@@ -2,7 +2,7 @@
 import { type Page } from 'playwright';
 import { openBrowser, closeBrowser, goTo, input, pressKey, getTitle as pwGetTitle, wait } from '@/playwright';
 
-let page: Page;
+export let page: Page;
 
 export async function startWebDriver() {
   page = await openBrowser();

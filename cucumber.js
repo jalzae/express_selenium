@@ -6,6 +6,7 @@ module.exports = {
     "--require-module ts-node/register",
     "--require-module tsconfig-paths/register",
     "--require features/**/*.ts",
+    "--require src/hooks.ts",
     "--format json:cucumber-report.json",
   ].join(" "),
   afterLaunch: async function () {

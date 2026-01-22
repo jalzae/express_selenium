@@ -21,7 +21,9 @@
   },
   "include": [
     "features/**/*.ts",
-    "android/**/*.ts"
+    "android/**/*.ts",
+    "src/**/*.ts",
+    "repository/**/*.ts"
   ],
   "exclude": [
     "node_modules"

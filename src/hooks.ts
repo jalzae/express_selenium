@@ -3,9 +3,17 @@ import fs from 'fs';
 import path from 'path';
 import { getRecordingFile } from './recording';
 
+import { page } from '@/repository/google';
+
 After(async function (scenario) {
   try {
-    // Selenium driver screenshot (if available)
+    // Playwright screenshot
+    if (page) {
+      const base64 = await page.screenshot({ encoding: 'base64' });
+      await this.attach(base64, 'image/png;base64');
+    }
+
+    // Selenium driver screenshot (legacy/fallback)
     if (this.driver) {
       const dir = path.join(process.cwd(), 'screenshots');
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
