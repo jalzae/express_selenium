@@ -8,7 +8,7 @@ export async function startWebDriver() {
 }
 
 export async function openGoogle(url: string = 'google.com') {
-  await driver.get('http://www.' + url);
+  await driver.get('https://www.' + url);
 }
 
 export async function searchKeyword(keyword: string) {
