@@ -4,67 +4,6 @@
     "elements": [
       {
         "description": "",
-        "id": "sum-feature;sum-feature",
-        "keyword": "Scenario",
-        "line": 3,
-        "name": "Sum Feature",
-        "steps": [
-          {
-            "arguments": [],
-            "keyword": "Given ",
-            "line": 4,
-            "name": "I have entered 50 into the calculator",
-            "match": {
-              "location": "features/example/example.ts:12"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 179208
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "When ",
-            "line": 5,
-            "name": "I have entered 70 into the calculator",
-            "match": {
-              "location": "features/example/example.ts:16"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 22624
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "Then ",
-            "line": 6,
-            "name": "I press add",
-            "match": {
-              "location": "features/example/example.ts:20"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 21874
-            }
-          }
-        ],
-        "tags": [],
-        "type": "scenario"
-      }
-    ],
-    "id": "sum-feature",
-    "line": 1,
-    "keyword": "Feature",
-    "name": "Sum Feature",
-    "tags": [],
-    "uri": "features/example/example.feature"
-  },
-  {
-    "description": "",
-    "elements": [
-      {
-        "description": "",
         "id": "google-search;open-google-and-search-for-various-terms",
         "keyword": "Scenario Outline",
         "line": 10,
@@ -80,7 +19,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3171519458
+              "duration": 2577247042
             }
           },
           {
@@ -93,7 +32,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 349905125
+              "duration": 213150375
             }
           },
           {
@@ -105,8 +44,9 @@
               "location": "features/google/google.ts:15"
             },
             "result": {
-              "status": "passed",
-              "duration": 3065992540
+              "status": "failed",
+              "duration": 10884958,
+              "error_message": "AssertionError [ERR_ASSERTION]: Expected title to include \"webdriver\", but it was \"Google\".\n    + expected - actual\n\n    -false\n    +true\n\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:17:8\n    at fulfilled (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:5:58)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
             }
           }
         ],
@@ -130,7 +70,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 2677176084
+              "duration": 1732453625
             }
           },
           {
@@ -143,7 +83,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 120334084
+              "duration": 118854042
             }
           },
           {
@@ -156,8 +96,8 @@
             },
             "result": {
               "status": "failed",
-              "duration": 983861124,
-              "error_message": "AssertionError [ERR_ASSERTION]: Expected title to include \"blogspot\", but it was \"\".\n    + expected - actual\n\n    -false\n    +true\n\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:17:8\n    at fulfilled (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:5:58)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)"
+              "duration": 30581874,
+              "error_message": "AssertionError [ERR_ASSERTION]: Expected title to include \"blogspot\", but it was \"Google\".\n    + expected - actual\n\n    -false\n    +true\n\n    at /Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:17:8\n    at fulfilled (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/features/google/google.ts:5:58)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
             }
           }
         ],
@@ -181,7 +121,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 2547126125
+              "duration": 4261041000
             }
           },
           {
@@ -194,7 +134,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 128994916
+              "duration": 142384334
             }
           },
           {
@@ -207,7 +147,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 1495012625
+              "duration": 930232874
             }
           }
         ],
@@ -221,101 +161,5 @@
     "name": "Google Search",
     "tags": [],
     "uri": "features/google/google.feature"
-  },
-  {
-    "description": "",
-    "elements": [
-      {
-        "description": "",
-        "id": "greeting;say-hello",
-        "keyword": "Scenario",
-        "line": 3,
-        "name": "Say hello",
-        "steps": [
-          {
-            "arguments": [],
-            "keyword": "When ",
-            "line": 4,
-            "name": "the greeter says hello",
-            "match": {
-              "location": "features/greeting/greeting.ts:9"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 410709
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "Then ",
-            "line": 5,
-            "name": "I should have heard \"hello\"",
-            "match": {
-              "location": "features/greeting/greeting.ts:13"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 64500
-            }
-          }
-        ],
-        "tags": [],
-        "type": "scenario"
-      }
-    ],
-    "id": "greeting",
-    "line": 1,
-    "keyword": "Feature",
-    "name": "Greeting",
-    "tags": [],
-    "uri": "features/greeting/greeting.feature"
-  },
-  {
-    "description": "",
-    "elements": [
-      {
-        "description": "",
-        "id": "test-extension-feature;test-auto-text",
-        "keyword": "Scenario",
-        "line": 3,
-        "name": "Test auto Text",
-        "steps": [
-          {
-            "arguments": [],
-            "keyword": "Given ",
-            "line": 4,
-            "name": "Default Value",
-            "match": {
-              "location": "features/testing/testing.ts:5"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 171875
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "Then ",
-            "line": 5,
-            "name": "Can Access the value",
-            "match": {
-              "location": "features/testing/testing.ts:7"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 47167
-            }
-          }
-        ],
-        "tags": [],
-        "type": "scenario"
-      }
-    ],
-    "id": "test-extension-feature",
-    "line": 1,
-    "keyword": "Feature",
-    "name": "Test Extension Feature",
-    "tags": [],
-    "uri": "features/testing/testing.feature"
   }
 ]
