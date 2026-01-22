@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { getRecordingFile } from './recording';
 
-import { page } from '@/repository/google';
+import { page } from '~/repository/google';
 
 After(async function (scenario) {
   try {
