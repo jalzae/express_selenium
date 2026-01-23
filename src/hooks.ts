@@ -10,8 +10,14 @@ After(async function (scenario) {
     // Playwright screenshot
     if (page) {
       try {
-        const screenshot = await page.screenshot();
-        await this.attach(screenshot.toString('base64'), 'base64:image/png');
+        const dir = path.join(process.cwd(), 'screenshots');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        const safe = scenario.pickle.name.replace(/[^a-z0-9]/gi, '_');
+        const ts = new Date().toISOString().replaceAll(/[:.]/g, '-');
+        const filePath = path.join(dir, `${safe}-${ts}.png`);
+
+        const screenshot = await page.screenshot({ path: filePath });
+        this.attach(screenshot.toString('base64'), 'base64:image/png');
       } catch (e) {
         console.error('Failed to take screenshot:', e);
       }

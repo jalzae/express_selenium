@@ -4,3 +4,4 @@ build
 .env
 bun.lock
 .DS_Store
+screenshots/*.*
