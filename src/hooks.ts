@@ -13,7 +13,7 @@ After(async function (scenario) {
         const dir = path.join(process.cwd(), 'screenshots');
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         const safe = scenario.pickle.name.replace(/[^a-z0-9]/gi, '_');
-        const ts = new Date().toISOString().replaceAll(/[:.]/g, '-');
+        const ts = new Date().toISOString().replace(/[:.]/g, '-');
         const filePath = path.join(dir, `${safe}-${ts}.png`);
 
         const screenshot = await page.screenshot({ path: filePath });
