@@ -31,7 +31,7 @@ After(async function (scenario) {
       if (this.attach) {
         // Attach inline image so cucumber-html-reporter can render it
         const buffer = Buffer.from(base64, 'base64');
-        await this.attach(buffer, 'image/png');
+        this.attach(buffer, 'image/png');
       }
     }
 
@@ -39,15 +39,17 @@ After(async function (scenario) {
     const recordingPath = getRecordingFile?.(scenario.pickle.name);
     if (recordingPath && this.attach) {
       const rel = path.relative(process.cwd(), recordingPath);
-      await this.attach(`Recording: ${rel}`, 'text/plain');
+      this.attach(`Recording: ${rel}`, 'text/plain');
       // Also provide clickable HTML link
-      await this.attach(`<a href="${rel}">Download recording</a>`, 'text/html');
+      this.attach(`<a href="${rel}">Download recording</a>`, 'text/html');
     }
   } catch (err) {
     console.error('[Hooks After] Error attaching artifacts:', err);
   } finally {
     try {
-       await quitWebDriver(); 
-    } catch {}
+      await quitWebDriver();
+    } catch (err) {
+      console.error('Failed to quit WebDriver', err);
+    }
   }
 });
