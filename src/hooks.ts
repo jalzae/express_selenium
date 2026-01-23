@@ -1,16 +1,20 @@
 import { After } from '@cucumber/cucumber';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { getRecordingFile } from './recording';
 
-import { page } from '~/repository/google';
+import { page, quitWebDriver } from '~/repository/google';
 
 After(async function (scenario) {
   try {
     // Playwright screenshot
     if (page) {
-      const screenshot = await page.screenshot();
-      await this.attach(screenshot.toString('base64'), 'base64:image/png');
+      try {
+        const screenshot = await page.screenshot();
+        await this.attach(screenshot.toString('base64'), 'base64:image/png');
+      } catch (e) {
+        console.error('Failed to take screenshot:', e);
+      }
     }
 
     // Selenium driver screenshot (legacy/fallback)
@@ -41,5 +45,9 @@ After(async function (scenario) {
     }
   } catch (err) {
     console.error('[Hooks After] Error attaching artifacts:', err);
+  } finally {
+    try {
+       await quitWebDriver(); 
+    } catch {}
   }
 });

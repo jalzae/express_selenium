@@ -1,5 +1,5 @@
 import assert from "assert";
-import { startWebDriver, openGoogle, searchKeyword, getTitle, quitWebDriver } from '~/repository/google'
+import { startWebDriver, openGoogle, searchKeyword, getTitle } from '~/repository/google'
 import { Given, When, Then } from "@cucumber/cucumber";
 
 
@@ -18,6 +18,5 @@ Then('Title is include with {string}', async (expectedTerm: string) => {
 		result.includes(expectedTerm),
 		`Expected title to include "${expectedTerm}", but it was "${result}".`
 	);
-	await quitWebDriver();
 });
 

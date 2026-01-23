@@ -19,11 +19,14 @@ try {
   // Use spawn to stream output
   const { spawn } = require('child_process');
   const child = spawn('npx', ['cucumber-js', `./features/${name}/${name}.feature`], { stdio: 'inherit', shell: true });
-  
+
   child.on('close', (code: number) => {
     if (code === 0) {
       // Run report if successful
       const report = spawn('npm', ['run', 'report'], { stdio: 'inherit', shell: true });
+      report.on('close', (code: number) => {
+        process.exit(code);
+      });
     } else {
       process.exit(code);
     }

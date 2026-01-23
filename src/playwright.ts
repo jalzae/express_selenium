@@ -120,7 +120,7 @@ function toCssSelector(prefix: string, rawValue: string): string {
  */
 export async function openBrowser(): Promise<Page> {
   const engine = getBrowserEngine();
-  const headless = String(process.env.HEADLESS ?? 'true') !== 'false';
+  const headless = String(process.env.HEADLESS ?? 'false') !== 'false';
   const launcher = engine === 'firefox' ? firefox : engine === 'webkit' ? webkit : chromium;
 
   const browser: Browser = await launcher.launch({ headless });
