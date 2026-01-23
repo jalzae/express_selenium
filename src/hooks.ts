@@ -4,11 +4,14 @@ import path from 'node:path';
 import { getRecordingFile } from './recording';
 
 import { page, quitWebDriver } from '~/repository/google';
+import { page as sessionPage } from '@/session';
+import { closeBrowser } from '@/playwright';
 
 After(async function (scenario) {
   try {
     // Playwright screenshot
-    if (page) {
+    const activePage = sessionPage || page; // fallback to google page if session not set (migration)
+    if (activePage) {
       try {
         const dir = path.join(process.cwd(), 'screenshots');
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -16,7 +19,7 @@ After(async function (scenario) {
         const ts = new Date().toISOString().replace(/[:.]/g, '-');
         const filePath = path.join(dir, `${safe}-${ts}.png`);
 
-        const screenshot = await page.screenshot({ path: filePath });
+        const screenshot = await activePage.screenshot({ path: filePath });
         this.attach(screenshot.toString('base64'), 'base64:image/png');
       } catch (e) {
         console.error('Failed to take screenshot:', e);
@@ -53,7 +56,11 @@ After(async function (scenario) {
     console.error('[Hooks After] Error attaching artifacts:', err);
   } finally {
     try {
-      await quitWebDriver();
+      if (sessionPage) {
+          await closeBrowser(sessionPage);
+      } else {
+        await quitWebDriver();
+      }
     } catch (err) {
       console.error('Failed to quit WebDriver', err);
     }

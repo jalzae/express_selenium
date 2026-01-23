@@ -1,10 +1,12 @@
 import { type Page } from 'playwright';
-import { openBrowser, closeBrowser, goTo, input, click, waitUntilUrl, wait } from '@/playwright';
+import { openBrowser, closeBrowser, goTo, input, click, waitUntilUrl } from '@/playwright';
+import { setPage } from '@/session';
 
 export let page: Page;
 
 export async function startWebDriver() {
   page = await openBrowser();
+  setPage(page);
 }
 
 export async function openSauceDemo() {
