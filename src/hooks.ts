@@ -3,14 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getRecordingFile } from './recording';
 
-import { page, quitWebDriver } from '~/repository/google';
 import { page as sessionPage } from '@/session';
 import { closeBrowser } from '@/playwright';
 
 After(async function (scenario) {
   try {
     // Playwright screenshot
-    const activePage = sessionPage || page; // fallback to google page if session not set (migration)
+    const activePage = sessionPage;
     if (activePage) {
       try {
         const dir = path.join(process.cwd(), 'screenshots');
@@ -58,8 +57,6 @@ After(async function (scenario) {
     try {
       if (sessionPage) {
           await closeBrowser(sessionPage);
-      } else {
-        await quitWebDriver();
       }
     } catch (err) {
       console.error('Failed to quit WebDriver', err);
