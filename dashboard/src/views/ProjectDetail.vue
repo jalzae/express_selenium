@@ -68,21 +68,87 @@
       </div>
     </div>
 
+    <!-- Step Library Section -->
+    <div class="steps-section">
+      <div class="section-header">
+        <h3>Step Library</h3>
+        <div class="header-actions">
+          <button class="btn-sm btn-secondary" @click="importSteps" :disabled="importing">
+            {{ importing ? 'Importing...' : '📥 Import from Playwright' }}
+          </button>
+          <button class="btn-sm btn-primary" @click="openStepModal()">+ Add Step</button>
+        </div>
+      </div>
+      <div class="steps-grid" v-if="stepDefinitions.length">
+        <div v-for="step in stepDefinitions" :key="step.id" class="step-card">
+          <div class="step-header">
+            <span class="step-icon">{{ stepStore.getCategoryIcon(step.category || '') }}</span>
+            <div class="step-info">
+              <span class="step-name">{{ step.name }}</span>
+              <span class="badge" :class="stepStore.getCategoryColor(step.category || '')">{{ step.category }}</span>
+            </div>
+            <div class="step-actions">
+              <button class="btn-icon" @click="editStep(step)" title="Edit">✏️</button>
+              <button class="btn-icon" @click="confirmDeleteStep(step)" title="Delete">🗑️</button>
+            </div>
+          </div>
+          <div class="step-body">
+            <code class="gherkin-pattern">{{ step.gherkinPattern }}</code>
+            <div class="step-meta">
+              <span class="function">→ {{ step.playwrightFunction }}()</span>
+              <span class="params-count">{{ step.parameters?.length || 0 }} params</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else class="empty-state">
+        <div class="empty-icon">📚</div>
+        <h4>No step definitions yet</h4>
+        <p>Import from Playwright library or create custom steps</p>
+        <div class="flex gap-2">
+          <button class="btn-primary" @click="importSteps">📥 Import from Playwright</button>
+          <button class="btn-secondary" @click="openStepModal()">+ Add Custom Step</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Run Tests Section -->
     <div class="run-section">
       <h3>Run Tests</h3>
       <div class="run-card">
-        <p class="help-text">Select features to run in this test suite:</p>
+        <p class="help-text">Select features to run in this test suite (drag to reorder):</p>
         <div class="feature-selector">
-          <label v-for="feature in enabledFeatures" :key="feature.id" class="feature-checkbox">
-            <input type="checkbox" :value="feature.id" v-model="selectedFeatures" />
-            <span class="checkbox-check"></span>
-            <div class="checkbox-content">
-              <span class="checkbox-name">{{ feature.name }}</span>
-              <span class="checkbox-meta">{{ getScenarioCount(feature.content) }} scenarios · {{ feature.framework }}</span>
-            </div>
+          <div v-for="(featureId, idx) in orderedFeatures" :key="featureId" class="feature-checkbox"
+               draggable="true"
+               @dragstart="onDragStart(idx)"
+               @dragover.prevent
+               @drop="onDrop(idx)">
+            <span class="drag-handle">⋮⋮</span>
+            <label class="checkbox-label">
+              <input type="checkbox" :value="featureId" v-model="selectedFeatures" />
+              <span class="checkbox-check"></span>
+              <div class="checkbox-content">
+                <span class="checkbox-name">{{ getFeatureById(featureId)?.name }}</span>
+                <span class="checkbox-meta">{{ getScenarioCount(getFeatureById(featureId)?.content || '') }} scenarios · {{ getFeatureById(featureId)?.framework }}</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Options -->
+        <div class="run-options">
+          <label class="option-checkbox">
+            <input type="checkbox" v-model="recordTestRun" />
+            <span class="option-check"></span>
+            <span>📹 Record test run video</span>
+          </label>
+          <label class="option-checkbox">
+            <input type="checkbox" v-model="takeScreenshots" />
+            <span class="option-check"></span>
+            <span>📸 Take screenshots</span>
           </label>
         </div>
+
         <div class="run-actions">
           <div class="run-summary">
             <span>{{ selectedFeatures.length }} feature{{ selectedFeatures.length !== 1 ? 's' : '' }} selected</span>
@@ -220,31 +286,150 @@ Example: I want to test the login functionality. User should be able to login wi
         </div>
       </div>
     </Teleport>
+
+    <!-- Step Definition Modal -->
+    <Teleport to="body">
+      <div v-if="showStepModal" class="modal-overlay" @click.self="closeStepModal">
+        <div class="modal modal-large">
+          <div class="modal-header">
+            <h3>{{ editingStep ? 'Edit Step Definition' : 'New Step Definition' }}</h3>
+            <button class="btn-icon" @click="closeStepModal">✕</button>
+          </div>
+          <form @submit.prevent="saveStep">
+            <div class="modal-body">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Step Name *</label>
+                  <input v-model="stepForm.name" required placeholder="e.g., Navigate to URL" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Category *</label>
+                  <select v-model="stepForm.category" required>
+                    <option value="navigation">🧭 Navigation</option>
+                    <option value="input">⌨️ Input</option>
+                    <option value="click">👆 Click</option>
+                    <option value="assertion">✓ Assertion</option>
+                    <option value="wait">⏱️ Wait</option>
+                    <option value="screenshot">📸 Screenshot</option>
+                    <option value="form">📋 Form</option>
+                    <option value="scroll">📜 Scroll</option>
+                    <option value="script">🔧 Script</option>
+                    <option value="attribute">🏷️ Attribute</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Gherkin Pattern *</label>
+                <input v-model="stepForm.gherkinPattern" required
+                  placeholder="e.g., I navigate to {url}" />
+                <p class="help-text">Use {paramName} for dynamic parameters</p>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Playwright Function *</label>
+                <input v-model="stepForm.playwrightFunction" required
+                  placeholder="e.g., goTo, click, input" />
+                <p class="help-text">Function name from src/playwright.ts</p>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Description</label>
+                <input v-model="stepForm.description" placeholder="What this step does..." />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Parameters</label>
+                <div class="params-editor">
+                  <div v-for="(param, idx) in stepForm.parameters" :key="idx" class="param-row">
+                    <input v-model="param.name" placeholder="Name" required />
+                    <select v-model="param.type">
+                      <option value="string">String</option>
+                      <option value="number">Number</option>
+                      <option value="boolean">Boolean</option>
+                    </select>
+                    <input v-model="param.default" placeholder="Default value (optional)" />
+                    <button type="button" class="btn-icon btn-error" @click="stepForm.parameters.splice(idx, 1)">✕</button>
+                  </div>
+                  <button type="button" class="btn-sm btn-secondary" @click="stepForm.parameters.push({ name: '', type: 'string' })">
+                    + Add Parameter
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn-secondary" @click="closeStepModal">Cancel</button>
+              <button type="submit" class="btn-primary">
+                {{ editingStep ? 'Save Changes' : 'Create Step' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Delete Step Confirmation -->
+    <Teleport to="body">
+      <div v-if="deletingStep" class="modal-overlay" @click.self="deletingStep = null">
+        <div class="modal modal-small">
+          <div class="modal-header">
+            <h3>Delete Step?</h3>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to delete <strong>{{ deletingStep.name }}</strong>?</p>
+            <p class="warning">This action cannot be undone.</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" @click="deletingStep = null">Cancel</button>
+            <button class="btn-error" @click="deleteStep">Delete</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore, type Feature } from '../stores/projects'
 import { useTestRunStore } from '../stores/testRuns'
+import { useStepDefinitionStore, type StepDefinition } from '../stores/stepDefinitions'
 
 const route = useRoute()
 const router = useRouter()
 const projectStore = useProjectStore()
 const testRunStore = useTestRunStore()
+const stepStore = useStepDefinitionStore()
 
 const projectId = route.params.id as string
 const project = computed(() => projectStore.getProject(projectId))
 const features = computed(() => projectStore.getProjectFeatures(projectId))
 const enabledFeatures = computed(() => features.value.filter(f => f.enabled))
+const stepDefinitions = computed(() => stepStore.steps.filter(s => s.enabled))
 
 const showFeatureModal = ref(false)
 const editingFeature = ref<Feature | null>(null)
 const deletingFeature = ref<Feature | null>(null)
 const selectedFeatures = ref<string[]>([])
+const orderedFeatures = ref<string[]>([])
+const recordTestRun = ref(false)
+const takeScreenshots = ref(true)
 const aiGenerating = ref(false)
 const aiDescription = ref('')
+const dragIdx = ref<number | null>(null)
+
+// Step definitions
+const showStepModal = ref(false)
+const editingStep = ref<StepDefinition | null>(null)
+const deletingStep = ref<StepDefinition | null>(null)
+const importing = ref(false)
+
+const stepForm = reactive({
+  name: '',
+  category: 'navigation' as StepDefinition['category'],
+  gherkinPattern: '',
+  playwrightFunction: '',
+  parameters: [] as Array<{ name: string; type: string; default?: string }>,
+  description: '',
+  enabled: true
+})
 
 const defaultGherkin = `Feature: New Feature
   As a user
@@ -338,9 +523,29 @@ function getPreview(content: string): string {
 }
 
 async function runTests() {
-  const run = await testRunStore.createTestRun(projectId, selectedFeatures.value)
+  // Use selected features in their current order
+  const featuresToRun = orderedFeatures.value.filter(id => selectedFeatures.value.includes(id))
+  const run = await testRunStore.createTestRun(projectId, featuresToRun, {
+    recordTestRun: recordTestRun.value,
+    takeScreenshots: takeScreenshots.value
+  })
   await testRunStore.runTest(run.id)
   router.push(`/test-runs/${run.id}`)
+}
+
+function getFeatureById(id: string) {
+  return features.value.find(f => f.id === id)
+}
+
+function onDragStart(idx: number) {
+  dragIdx.value = idx
+}
+
+function onDrop(idx: number) {
+  if (dragIdx.value === null || dragIdx.value === idx) return
+  const item = orderedFeatures.value.splice(dragIdx.value, 1)[0]
+  orderedFeatures.value.splice(idx, 0, item)
+  dragIdx.value = null
 }
 
 async function generateWithAI() {
@@ -377,10 +582,99 @@ async function generateWithAI() {
   }
 }
 
+// Step Definition functions
+function openStepModal() {
+  editingStep.value = null
+  resetStepForm()
+  showStepModal.value = true
+}
+
+function closeStepModal() {
+  showStepModal.value = false
+  editingStep.value = null
+  resetStepForm()
+}
+
+function editStep(step: StepDefinition) {
+  editingStep.value = step
+  Object.assign(stepForm, {
+    name: step.name,
+    category: step.category,
+    gherkinPattern: step.gherkinPattern,
+    playwrightFunction: step.playwrightFunction,
+    parameters: step.parameters ? [...step.parameters] : [],
+    description: step.description || '',
+    enabled: !!step.enabled
+  })
+  showStepModal.value = true
+}
+
+function confirmDeleteStep(step: StepDefinition) {
+  deletingStep.value = step
+}
+
+async function saveStep() {
+  const data = { ...stepForm, projectId, enabled: stepForm.enabled ? 1 : 0 }
+  if (editingStep.value) {
+    await stepStore.updateStepDefinition(editingStep.value.id, data)
+  } else {
+    await stepStore.createStepDefinition(data)
+  }
+  closeStepModal()
+  await stepStore.fetchStepDefinitions(projectId)
+}
+
+async function deleteStep() {
+  if (deletingStep.value) {
+    await stepStore.deleteStepDefinition(deletingStep.value.id)
+    deletingStep.value = null
+  }
+}
+
+async function importSteps() {
+  importing.value = true
+  try {
+    await stepStore.importFromLibrary(projectId, 'playwright')
+  } catch (err: any) {
+    alert('Import failed: ' + err.message)
+  } finally {
+    importing.value = false
+  }
+}
+
+function resetStepForm() {
+  Object.assign(stepForm, {
+    name: '',
+    category: 'navigation',
+    gherkinPattern: '',
+    playwrightFunction: '',
+    parameters: [],
+    description: '',
+    enabled: true
+  })
+}
+
 onMounted(() => {
   projectStore.fetchFeatures(projectId)
   testRunStore.fetchTestRuns(projectId)
+  stepStore.fetchStepDefinitions(projectId)
+  // Initialize ordered features with enabled feature IDs
+  orderedFeatures.value = enabledFeatures.value.map(f => f.id)
 })
+
+// Update orderedFeatures when features change
+watch(enabledFeatures, (newFeatures) => {
+  const currentIds = new Set(orderedFeatures.value)
+  const newIds = newFeatures.map(f => f.id)
+  // Add new features
+  for (const id of newIds) {
+    if (!currentIds.has(id)) {
+      orderedFeatures.value.push(id)
+    }
+  }
+  // Remove deleted features
+  orderedFeatures.value = orderedFeatures.value.filter(id => newIds.includes(id))
+}, { deep: true })
 </script>
 
 <style scoped>
@@ -585,21 +879,29 @@ onMounted(() => {
 .feature-checkbox {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   padding: 0.875rem 1rem;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
-  cursor: pointer;
   transition: all 0.2s;
 }
 
 .feature-checkbox:hover {
   border-color: var(--accent);
+  background: var(--bg-secondary);
 }
 
 .feature-checkbox input[type="checkbox"] {
   display: none;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  cursor: pointer;
 }
 
 .checkbox-check {
@@ -648,6 +950,78 @@ onMounted(() => {
   align-items: center;
   padding-top: 1rem;
   border-top: 1px solid var(--border);
+}
+
+/* Drag handle */
+.drag-handle {
+  cursor: grab;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  letter-spacing: -2px;
+  padding: 0 0.25rem;
+  user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.feature-checkbox[draggable="true"] {
+  cursor: move;
+}
+
+.feature-checkbox .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  cursor: pointer;
+}
+
+/* Options checkboxes */
+.run-options {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-tertiary);
+  border-radius: 0.5rem;
+}
+
+.option-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.option-checkbox input[type="checkbox"] {
+  display: none;
+}
+
+.option-check {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.option-checkbox input:checked + .option-check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.option-checkbox input:checked + .option-check::after {
+  content: '✓';
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
 }
 
 .run-summary {
@@ -820,4 +1194,125 @@ onMounted(() => {
   border: 1px solid var(--border);
   resize: vertical;
 }
+
+/* Step Library */
+.steps-section {
+  margin-bottom: 2.5rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1rem;
+}
+
+.step-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.step-card:hover {
+  border-color: var(--accent);
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.step-icon {
+  font-size: 1.25rem;
+}
+
+.step-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.step-name {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.step-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.step-body {
+  padding: 0.75rem 1rem;
+}
+
+.gherkin-pattern {
+  display: block;
+  background: var(--bg-tertiary);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.75rem;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.step-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.function {
+  font-family: monospace;
+  background: var(--bg-tertiary);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+}
+
+/* Parameters Editor */
+.params-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.param-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 2fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.param-row input,
+.param-row select {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--bg-primary);
+  font-size: 0.875rem;
+}
+
+/* Badge colors */
+.badge-purple { background: #8b5cf6; color: white; }
+.badge-orange { background: #f97316; color: white; }
+.badge-teal { background: #14b8a6; color: white; }
+.badge-dark { background: #374151; color: white; }
+.badge-pink { background: #ec4899; color: white; }
+.badge-primary { background: #3b82f6; color: white; }
 </style>

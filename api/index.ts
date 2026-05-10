@@ -98,6 +98,8 @@ db.exec(`
     screenshotPaths TEXT,
     resultJson TEXT,
     errorMessage TEXT,
+    recordTestRun INTEGER DEFAULT 0,
+    takeScreenshots INTEGER DEFAULT 1,
     FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
   );
 
@@ -106,6 +108,16 @@ db.exec(`
 `);
 
 // Migration: Add missing columns for existing databases
+const testRunColumns = db.prepare("PRAGMA table_info(test_runs)").all() as any[];
+const hasRecordTestRunColumn = testRunColumns.some((col: any) => col.name === 'recordTestRun');
+if (!hasRecordTestRunColumn) {
+  db.exec('ALTER TABLE test_runs ADD COLUMN recordTestRun INTEGER DEFAULT 0');
+}
+const hasTakeScreenshotsColumn = testRunColumns.some((col: any) => col.name === 'takeScreenshots');
+if (!hasTakeScreenshotsColumn) {
+  db.exec('ALTER TABLE test_runs ADD COLUMN takeScreenshots INTEGER DEFAULT 1');
+}
+
 const featureColumns = db.prepare("PRAGMA table_info(features)").all() as any[];
 const hasContentColumn = featureColumns.some((col: any) => col.name === 'content');
 if (!hasContentColumn) {
@@ -139,6 +151,50 @@ const projectColumns = db.prepare("PRAGMA table_info(projects)").all() as any[];
 const hasMobileConfigColumn = projectColumns.some((col: any) => col.name === 'mobileConfig');
 if (!hasMobileConfigColumn) {
   db.exec('ALTER TABLE projects ADD COLUMN mobileConfig TEXT');
+}
+
+// Migration: Create step_definitions table
+const tableList = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as any[];
+const hasStepDefinitionsTable = tableList.some((t: any) => t.name === 'step_definitions');
+if (!hasStepDefinitionsTable) {
+  db.exec(`
+    CREATE TABLE step_definitions (
+      id TEXT PRIMARY KEY,
+      projectId TEXT NOT NULL,
+      name TEXT NOT NULL,
+      category TEXT CHECK(category IN ('navigation', 'input', 'click', 'assertion', 'wait', 'screenshot', 'form', 'scroll', 'script', 'attribute')),
+      gherkinPattern TEXT NOT NULL,
+      playwrightFunction TEXT NOT NULL,
+      parameters TEXT,
+      description TEXT,
+      enabled INTEGER DEFAULT 1,
+      createdAt TEXT DEFAULT (datetime('now')),
+      updatedAt TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_steps_project ON step_definitions(projectId);
+    CREATE INDEX IF NOT EXISTS idx_steps_category ON step_definitions(category);
+  `);
+}
+
+// Migration: Create scenario_steps table to link feature scenarios to step definitions
+const hasScenarioStepsTable = tableList.some((t: any) => t.name === 'scenario_steps');
+if (!hasScenarioStepsTable) {
+  db.exec(`
+    CREATE TABLE scenario_steps (
+      id TEXT PRIMARY KEY,
+      featureId TEXT NOT NULL,
+      scenarioName TEXT NOT NULL,
+      stepDefinitionId TEXT NOT NULL,
+      stepOrder INTEGER NOT NULL,
+      parameterValues TEXT,
+      createdAt TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (featureId) REFERENCES features(id) ON DELETE CASCADE,
+      FOREIGN KEY (stepDefinitionId) REFERENCES step_definitions(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_scenario_steps_feature ON scenario_steps(featureId);
+    CREATE INDEX IF NOT EXISTS idx_scenario_steps_scenario ON scenario_steps(featureId, scenarioName, stepOrder);
+  `);
 }
 
 // ============================================================================
@@ -340,6 +396,168 @@ app.delete('/api/features/:id', (req, res) => {
 });
 
 // ============================================================================
+// STEP DEFINITIONS
+// ============================================================================
+app.get('/api/projects/:projectId/step-definitions', (req, res) => {
+  const steps = db.prepare('SELECT * FROM step_definitions WHERE projectId = ? ORDER BY category, name').all(req.params.projectId);
+  res.json(steps.map((s: any) => {
+    const parsed = { ...s };
+    if (parsed.parameters) {
+      try { parsed.parameters = JSON.parse(parsed.parameters); } catch {}
+    }
+    return parsed;
+  }));
+});
+
+app.get('/api/step-definitions/:id', (req, res) => {
+  const step = db.prepare('SELECT * FROM step_definitions WHERE id = ?').get(req.params.id);
+  if (!step) return res.status(404).json({ error: 'Step definition not found' });
+  const parsed = { ...step } as any;
+  if (parsed.parameters) {
+    try { parsed.parameters = JSON.parse(parsed.parameters); } catch {}
+  }
+  res.json(parsed);
+});
+
+app.post('/api/step-definitions', (req, res) => {
+  const { projectId, name, category, gherkinPattern, playwrightFunction, parameters, description, enabled } = req.body;
+
+  if (!projectId || !name || !gherkinPattern || !playwrightFunction) {
+    return res.status(400).json({ error: 'projectId, name, gherkinPattern, and playwrightFunction are required' });
+  }
+
+  const id = generateId();
+  const stmt = db.prepare(`
+    INSERT INTO step_definitions (id, projectId, name, category, gherkinPattern, playwrightFunction, parameters, description, enabled)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  try {
+    stmt.run(id, projectId, name, category || null, gherkinPattern, playwrightFunction,
+      parameters ? JSON.stringify(parameters) : null, description || null, enabled !== undefined ? (enabled ? 1 : 0) : 1);
+    const step = db.prepare('SELECT * FROM step_definitions WHERE id = ?').get(id);
+    res.status(201).json(step);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/step-definitions/:id', (req, res) => {
+  const { name, category, gherkinPattern, playwrightFunction, parameters, description, enabled } = req.body;
+
+  const stmt = db.prepare(`
+    UPDATE step_definitions
+    SET name = ?, category = ?, gherkinPattern = ?, playwrightFunction = ?, parameters = ?,
+        description = ?, enabled = ?, updatedAt = datetime('now')
+    WHERE id = ?
+  `);
+
+  try {
+    stmt.run(name, category || null, gherkinPattern, playwrightFunction,
+      parameters ? JSON.stringify(parameters) : null, description || null,
+      enabled !== undefined ? (enabled ? 1 : 0) : 1, req.params.id);
+    const step = db.prepare('SELECT * FROM step_definitions WHERE id = ?').get(req.params.id);
+    if (!step) return res.status(404).json({ error: 'Step definition not found' });
+    res.json(step);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/step-definitions/:id', (req, res) => {
+  const stmt = db.prepare('DELETE FROM step_definitions WHERE id = ?');
+  const result = stmt.run(req.params.id);
+  if (result.changes === 0) return res.status(404).json({ error: 'Step definition not found' });
+  res.status(204).send();
+});
+
+// Bulk import step definitions from Playwright library
+app.post('/api/projects/:projectId/step-definitions/import', (req, res) => {
+  const { framework } = req.body;
+  if (framework !== 'playwright') {
+    return res.status(400).json({ error: 'Only playwright framework is supported' });
+  }
+
+  // Default step definitions for Playwright
+  const defaultSteps = [
+    // Navigation
+    { name: 'Navigate to URL', category: 'navigation', gherkinPattern: 'I navigate to {url}', playwrightFunction: 'goTo', parameters: [{ name: 'url', type: 'string', description: 'URL to navigate to' }], description: 'Navigate to a specific URL' },
+    { name: 'Go to URL', category: 'navigation', gherkinPattern: 'I go to {url}', playwrightFunction: 'goTo', parameters: [{ name: 'url', type: 'string', description: 'URL to navigate to' }], description: 'Navigate to a specific URL' },
+    { name: 'Refresh page', category: 'navigation', gherkinPattern: 'I refresh the page', playwrightFunction: 'refresh', parameters: [], description: 'Reload the current page' },
+    { name: 'Go back', category: 'navigation', gherkinPattern: 'I go back', playwrightFunction: 'goBack', parameters: [], description: 'Navigate back in browser history' },
+    { name: 'Go forward', category: 'navigation', gherkinPattern: 'I go forward', playwrightFunction: 'goForward', parameters: [], description: 'Navigate forward in browser history' },
+    // Input
+    { name: 'Enter text in input by ID', category: 'input', gherkinPattern: 'I enter {value} into input field having id {id}', playwrightFunction: 'input', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }, { name: 'value', type: 'string' }], description: 'Enter text into an input field by ID' },
+    { name: 'Enter text in input by name', category: 'input', gherkinPattern: 'I enter {value} into input field having name {name}', playwrightFunction: 'input', parameters: [{ name: 'selector', type: 'string', default: 'name:{name}' }, { name: 'value', type: 'string' }], description: 'Enter text into an input field by name' },
+    { name: 'Enter text in input by CSS', category: 'input', gherkinPattern: 'I enter {value} into input field having css selector {selector}', playwrightFunction: 'input', parameters: [{ name: 'selector', type: 'string', default: 'css:{selector}' }, { name: 'value', type: 'string' }], description: 'Enter text into an input field by CSS selector' },
+    { name: 'Clear input by ID', category: 'input', gherkinPattern: 'I clear input field having id {id}', playwrightFunction: 'clearInput', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Clear an input field by ID' },
+    { name: 'Type without clearing', category: 'input', gherkinPattern: 'I type {value} into input field having id {id}', playwrightFunction: 'sendInput', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }, { name: 'value', type: 'string' }], description: 'Type text without clearing existing content' },
+    // Click
+    { name: 'Click by ID', category: 'click', gherkinPattern: 'I click on element having id {id}', playwrightFunction: 'click', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Click an element by ID' },
+    { name: 'Click by CSS', category: 'click', gherkinPattern: 'I click on element having css selector {selector}', playwrightFunction: 'click', parameters: [{ name: 'selector', type: 'string', default: 'css:{selector}' }], description: 'Click an element by CSS selector' },
+    { name: 'Click by name', category: 'click', gherkinPattern: 'I click on element having name {name}', playwrightFunction: 'click', parameters: [{ name: 'selector', type: 'string', default: 'name:{name}' }], description: 'Click an element by name' },
+    { name: 'Double click', category: 'click', gherkinPattern: 'I double click on element having id {id}', playwrightFunction: 'doubleClick', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Double click an element' },
+    { name: 'Right click', category: 'click', gherkinPattern: 'I right click on element having id {id}', playwrightFunction: 'rightClick', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Right click an element' },
+    { name: 'Hover', category: 'click', gherkinPattern: 'I hover over element having id {id}', playwrightFunction: 'hover', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Hover over an element' },
+    // Form
+    { name: 'Check checkbox', category: 'form', gherkinPattern: 'I check checkbox having id {id}', playwrightFunction: 'check', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Check a checkbox' },
+    { name: 'Uncheck checkbox', category: 'form', gherkinPattern: 'I uncheck checkbox having id {id}', playwrightFunction: 'uncheck', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Uncheck a checkbox' },
+    { name: 'Select dropdown', category: 'form', gherkinPattern: 'I select {value} from dropdown having id {id}', playwrightFunction: 'selectOption', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }, { name: 'value', type: 'string' }], description: 'Select an option from dropdown' },
+    { name: 'Submit form', category: 'form', gherkinPattern: 'I submit the form having id {id}', playwrightFunction: 'submitInput', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Submit form by pressing Enter on input' },
+    // Assertion
+    { name: 'See text on page', category: 'assertion', gherkinPattern: 'I should see {text} text on page', playwrightFunction: 'getPageText', parameters: [{ name: 'expectedText', type: 'string' }], description: 'Verify text is visible somewhere on page' },
+    { name: 'See text in element by ID', category: 'assertion', gherkinPattern: 'I should see {text} text in element having id {id}', playwrightFunction: 'getText', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }, { name: 'expectedText', type: 'string' }], description: 'Verify text within specific element' },
+    { name: 'See text in element by CSS', category: 'assertion', gherkinPattern: 'I should see {text} text in element having css selector {selector}', playwrightFunction: 'getText', parameters: [{ name: 'selector', type: 'string', default: 'css:{selector}' }, { name: 'expectedText', type: 'string' }], description: 'Verify text within element by CSS' },
+    { name: 'Element visible', category: 'assertion', gherkinPattern: 'element having id {id} should be visible', playwrightFunction: 'isVisible', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Verify element is visible' },
+    { name: 'Element not visible', category: 'assertion', gherkinPattern: 'element having id {id} should not be visible', playwrightFunction: 'isVisible', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Verify element is not visible' },
+    { name: 'Element enabled', category: 'assertion', gherkinPattern: 'element having id {id} should be enabled', playwrightFunction: 'isEnabled', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Verify element is enabled' },
+    { name: 'Element disabled', category: 'assertion', gherkinPattern: 'element having id {id} should be disabled', playwrightFunction: 'isEnabled', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Verify element is disabled' },
+    { name: 'Checkbox checked', category: 'assertion', gherkinPattern: 'checkbox having id {id} should be checked', playwrightFunction: 'isChecked', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Verify checkbox is checked' },
+    { name: 'Title equals', category: 'assertion', gherkinPattern: 'the title should be {title}', playwrightFunction: 'getTitle', parameters: [{ name: 'expectedTitle', type: 'string' }], description: 'Verify page title' },
+    { name: 'URL equals', category: 'assertion', gherkinPattern: 'the URL should be {url}', playwrightFunction: 'getUrl', parameters: [{ name: 'expectedUrl', type: 'string' }], description: 'Verify exact URL' },
+    { name: 'URL contains', category: 'assertion', gherkinPattern: 'the URL should contain {fragment}', playwrightFunction: 'getUrl', parameters: [{ name: 'expectedFragment', type: 'string' }], description: 'Verify URL contains text' },
+    { name: 'Input value equals', category: 'assertion', gherkinPattern: 'the value of input having id {id} should be {value}', playwrightFunction: 'getInputValue', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }, { name: 'expectedValue', type: 'string' }], description: 'Verify input field value' },
+    { name: 'Element count equals', category: 'assertion', gherkinPattern: 'there should be {count} elements with css selector {selector}', playwrightFunction: 'getElementCount', parameters: [{ name: 'selector', type: 'string', default: 'css:{selector}' }, { name: 'count', type: 'number' }], description: 'Count elements matching selector' },
+    // Wait
+    { name: 'Wait milliseconds', category: 'wait', gherkinPattern: 'I wait {ms} milliseconds', playwrightFunction: 'wait', parameters: [{ name: 'ms', type: 'number' }], description: 'Pause for specified milliseconds' },
+    { name: 'Wait for element visible', category: 'wait', gherkinPattern: 'I wait for element having id {id} to be visible', playwrightFunction: 'waitUntilVisible', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Wait until element is visible' },
+    { name: 'Wait for element hidden', category: 'wait', gherkinPattern: 'I wait for element having id {id} to be hidden', playwrightFunction: 'waitUntilHidden', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Wait until element is hidden' },
+    // Screenshot
+    { name: 'Take screenshot', category: 'screenshot', gherkinPattern: 'I take a screenshot', playwrightFunction: 'takeShoot', parameters: [], description: 'Capture full page screenshot' },
+    // Scroll
+    { name: 'Scroll to element', category: 'scroll', gherkinPattern: 'I scroll to element having id {id}', playwrightFunction: 'scrollToElement', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }], description: 'Scroll element into view' },
+    { name: 'Scroll down', category: 'scroll', gherkinPattern: 'I scroll down {pixels} pixels', playwrightFunction: 'scrollBy', parameters: [{ name: 'x', type: 'number', default: 0 }, { name: 'y', type: 'number' }], description: 'Scroll down by pixels' },
+    { name: 'Scroll up', category: 'scroll', gherkinPattern: 'I scroll up {pixels} pixels', playwrightFunction: 'scrollBy', parameters: [{ name: 'x', type: 'number', default: 0 }, { name: 'y', type: 'number', default: '-{pixels}' }], description: 'Scroll up by pixels' },
+    // Script
+    { name: 'Execute script', category: 'script', gherkinPattern: 'I execute script {script}', playwrightFunction: 'executeScript', parameters: [{ name: 'script', type: 'string' }], description: 'Execute custom JavaScript' },
+    // Attribute
+    { name: 'Element has attribute', category: 'attribute', gherkinPattern: 'element having id {id} should have attribute {attr} with value {value}', playwrightFunction: 'getAttribute', parameters: [{ name: 'selector', type: 'string', default: 'id:{id}' }, { name: 'attribute', type: 'string' }], description: 'Verify element attribute value' },
+  ];
+
+  const stmt = db.prepare(`
+    INSERT INTO step_definitions (id, projectId, name, category, gherkinPattern, playwrightFunction, parameters, description, enabled)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const imported = [];
+  for (const step of defaultSteps) {
+    const id = generateId();
+    try {
+      stmt.run(id, req.params.projectId, step.name, step.category, step.gherkinPattern, step.playwrightFunction,
+        JSON.stringify(step.parameters), step.description, 1);
+      imported.push({ id, ...step });
+    } catch (e: any) {
+      // Skip duplicates
+      if (!e.message.includes('UNIQUE')) {
+        return res.status(500).json({ error: e.message });
+      }
+    }
+  }
+
+  res.status(201).json({ imported: imported.length, steps: imported });
+});
+
+// ============================================================================
 // TEST RUNS
 // ============================================================================
 app.get('/api/test-runs', (req, res) => {
@@ -373,7 +591,7 @@ app.get('/api/projects/:projectId/test-runs', (req, res) => {
 });
 
 app.post('/api/test-runs', (req, res) => {
-  const { projectId, featureIds } = req.body;
+  const { projectId, featureIds, recordTestRun, takeScreenshots } = req.body;
 
   if (!projectId || !featureIds || !Array.isArray(featureIds) || featureIds.length === 0) {
     return res.status(400).json({ error: 'projectId and featureIds array are required' });
@@ -381,12 +599,12 @@ app.post('/api/test-runs', (req, res) => {
 
   const id = generateId();
   const stmt = db.prepare(`
-    INSERT INTO test_runs (id, projectId, featureIds, status, startedAt)
-    VALUES (?, ?, ?, 'pending', datetime('now'))
+    INSERT INTO test_runs (id, projectId, featureIds, status, recordTestRun, takeScreenshots)
+    VALUES (?, ?, ?, 'pending', ?, ?)
   `);
 
   try {
-    stmt.run(id, projectId, JSON.stringify(featureIds));
+    stmt.run(id, projectId, JSON.stringify(featureIds), recordTestRun ? 1 : 0, takeScreenshots !== false ? 1 : 0);
     const run = db.prepare('SELECT * FROM test_runs WHERE id = ?').get(id);
     res.status(201).json(run);
   } catch (err: any) {
@@ -476,12 +694,14 @@ app.post('/api/test-runs/:id/run', async (req, res) => {
 
   // Spawn test runner
   const testRunnerPath = path.join(__dirname, 'test-runner.ts');
-  const child = spawn('npx', ['tsx', testRunnerPath, req.params.id], {
+  const child = spawn('npx', ['tsx', testRunnerPath], {
     cwd: path.join(__dirname, '..'),
     env: {
       ...process.env,
       TEST_RUN_ID: req.params.id,
-      PROJECT_TYPE: project.type
+      PROJECT_TYPE: project.type,
+      BASE_URL: project.baseUrl || '',
+      HEADLESS: 'true'
     }
   });
 
@@ -502,6 +722,13 @@ app.post('/api/test-runs/:id/run', async (req, res) => {
     const errorMessage = code === 0 ? null : output.slice(0, 1000);
     db.prepare('UPDATE test_runs SET status = ?, completedAt = datetime("now"), errorMessage = ? WHERE id = ?')
       .run(status, errorMessage, req.params.id);
+  });
+
+  child.on('error', (err) => {
+    runningTests.delete(req.params.id);
+    console.error('[TestRunner] Failed to spawn:', err);
+    db.prepare('UPDATE test_runs SET status = ?, errorMessage = ?, completedAt = datetime("now") WHERE id = ?')
+      .run('failed', `Failed to start test runner: ${err.message}`, req.params.id);
   });
 
   res.json({ message: 'Test started', runId: req.params.id });

@@ -38,11 +38,11 @@ export const useTestRunStore = defineStore('testRuns', () => {
     return currentRun.value
   }
 
-  async function createTestRun(projectId: string, featureIds: string[]) {
+  async function createTestRun(projectId: string, featureIds: string[], options?: { recordTestRun?: boolean; takeScreenshots?: boolean }) {
     const res = await fetch('/api/test-runs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectId, featureIds })
+      body: JSON.stringify({ projectId, featureIds, ...options })
     })
     if (res.ok) {
       const run = await res.json()

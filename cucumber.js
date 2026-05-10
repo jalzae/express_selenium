@@ -5,7 +5,7 @@ module.exports = {
   default: [
     "--require-module ts-node/register",
     "--require-module tsconfig-paths/register",
-    "--require features/**/*.ts",
+    "--require src/steps.ts",
     "--require src/hooks.ts",
     "--format json:cucumber-report.json",
   ].join(" "),
