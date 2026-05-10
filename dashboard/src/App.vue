@@ -1,12 +1,24 @@
 <template>
   <div class="app">
     <nav class="navbar">
-      <div class="container flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <h1 class="logo">E2E Dashboard</h1>
-          <router-link to="/" class="nav-link">Dashboard</router-link>
-          <router-link to="/projects" class="nav-link">Projects</router-link>
-          <router-link to="/test-runs" class="nav-link">Test Runs</router-link>
+      <div class="container navbar-inner">
+        <div class="navbar-brand">
+          <span class="brand-icon">🧪</span>
+          <span class="brand-name">E2E Dashboard</span>
+        </div>
+        <div class="navbar-nav">
+          <router-link to="/" class="nav-link">
+            <span>📊</span>
+            <span>Dashboard</span>
+          </router-link>
+          <router-link to="/projects" class="nav-link">
+            <span>📁</span>
+            <span>Projects</span>
+          </router-link>
+          <router-link to="/test-runs" class="nav-link">
+            <span>🚀</span>
+            <span>Test Runs</span>
+          </router-link>
         </div>
       </div>
     </nav>
@@ -37,33 +49,62 @@ onMounted(() => {
 .navbar {
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
-  padding: 0.75rem 0;
+  padding: 0;
 }
 
-.logo {
-  font-size: 1.25rem;
+.navbar-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 64px;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.brand-icon {
+  font-size: 1.5rem;
+}
+
+.brand-name {
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--accent);
-  margin: 0;
+}
+
+.navbar-nav {
+  display: flex;
+  gap: 0.25rem;
 }
 
 .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
   color: var(--text-secondary);
   text-decoration: none;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
   transition: all 0.2s;
 }
 
-.nav-link:hover,
-.nav-link.router-link-active {
+.nav-link:hover {
   color: var(--text-primary);
   background: var(--bg-tertiary);
-  text-decoration: none;
+}
+
+.nav-link.router-link-active {
+  color: var(--accent);
+  background: rgba(59, 130, 246, 0.15);
 }
 
 .main {
   flex: 1;
-  padding: 1.5rem 0;
+  padding: 2rem 0;
 }
 </style>

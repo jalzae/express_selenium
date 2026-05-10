@@ -129,15 +129,15 @@ async function runPlaywrightFeature(feature: any, project: any, resultsDir: stri
   process.env.BASE_URL = project.baseUrl || ''
   process.env.HEADLESS = 'true'
 
-  // Read feature file
-  const featurePath = path.join(process.cwd(), 'features', feature.path)
-  if (!fs.existsSync(featurePath)) {
-    throw new Error(`Feature file not found: ${featurePath}`)
-  }
+  // Generate feature file from DB content
+  const featuresDir = path.join(process.cwd(), 'features', 'web')
+  fs.mkdirSync(featuresDir, { recursive: true })
+
+  const featurePath = path.join(featuresDir, `${feature.id}-${feature.name.replace(/\s+/g, '_')}.feature`)
+  fs.writeFileSync(featurePath, feature.content, 'utf8')
 
   // Parse Gherkin feature
-  const featureContent = fs.readFileSync(featurePath, 'utf8')
-  const scenarios = parseGherkin(featureContent)
+  const scenarios = parseGherkin(feature.content)
 
   const page = await pwModule.openBrowser()
 
@@ -189,13 +189,14 @@ async function runWdioFeature(feature: any, project: any, resultsDir: string, re
   process.env.APPIUM_APP_ACTIVITY = project.appActivity || ''
   process.env.APPIUM_AUTOMATION_NAME = project.automationName || 'UiAutomator2'
 
-  const featurePath = path.join(process.cwd(), 'features', feature.path)
-  if (!fs.existsSync(featurePath)) {
-    throw new Error(`Feature file not found: ${featurePath}`)
-  }
+  // Generate feature file from DB content
+  const featuresDir = path.join(process.cwd(), 'features', 'mobile')
+  fs.mkdirSync(featuresDir, { recursive: true })
 
-  const featureContent = fs.readFileSync(featurePath, 'utf8')
-  const scenarios = parseGherkin(featureContent)
+  const featurePath = path.join(featuresDir, `${feature.id}-${feature.name.replace(/\s+/g, '_')}.feature`)
+  fs.writeFileSync(featurePath, feature.content, 'utf8')
+
+  const scenarios = parseGherkin(feature.content)
 
   const client = await initAppium()
 

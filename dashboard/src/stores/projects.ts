@@ -19,9 +19,9 @@ export interface Feature {
   id: string
   projectId: string
   name: string
-  path: string
   framework: 'playwright' | 'wdio'
   description?: string
+  content: string
   enabled: number
   createdAt: string
   updatedAt: string

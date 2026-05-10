@@ -4,6 +4,39 @@ import Database from 'better-sqlite3';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// AI Configuration (set via env vars)
+const ZAI_BASE_URL = process.env.ZAI_BASE_URL || 'https://api.zyphra.ai/v1';
+const ZAI_API_KEY = process.env.ZAI_API_KEY || '';
+const Z_MODEL = process.env.Z_MODEL || 'DARTH-v1';
+
+async function callAI(prompt: string): Promise<string> {
+  if (!ZAI_API_KEY) {
+    throw new Error('ZAI_API_KEY not configured');
+  }
+
+  const response = await fetch(`${ZAI_BASE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${ZAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: Z_MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 4000,
+      temperature: 0.3,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`AI API error: ${error}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.API_PORT || 3001;
@@ -42,9 +75,9 @@ db.exec(`
     id TEXT PRIMARY KEY,
     projectId TEXT NOT NULL,
     name TEXT NOT NULL,
-    path TEXT NOT NULL,
     framework TEXT CHECK(framework IN ('playwright', 'wdio')),
     description TEXT,
+    content TEXT NOT NULL,
     enabled INTEGER DEFAULT 1,
     createdAt TEXT DEFAULT (datetime('now')),
     updatedAt TEXT DEFAULT (datetime('now')),
@@ -148,27 +181,26 @@ app.get('/api/projects/:projectId/features', (req, res) => {
 });
 
 app.post('/api/features', (req, res) => {
-  const { projectId, name, path, framework, description, enabled } = req.body;
+  const { projectId, name, framework, description, content, enabled } = req.body;
 
-  if (!projectId || !name || !path || !framework) {
-    return res.status(400).json({ error: 'projectId, name, path, and framework are required' });
+  if (!projectId || !name || !framework || !content) {
+    return res.status(400).json({ error: 'projectId, name, framework, and content are required' });
   }
   if (!['playwright', 'wdio'].includes(framework)) {
     return res.status(400).json({ error: 'framework must be playwright or wdio' });
   }
 
-  // Verify project exists
   const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
   if (!project) return res.status(404).json({ error: 'Project not found' });
 
   const id = generateId();
   const stmt = db.prepare(`
-    INSERT INTO features (id, projectId, name, path, framework, description, enabled)
+    INSERT INTO features (id, projectId, name, framework, description, content, enabled)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
   try {
-    stmt.run(id, projectId, name, path, framework, description || null, enabled !== undefined ? (enabled ? 1 : 0) : 1);
+    stmt.run(id, projectId, name, framework, description || null, content, enabled !== undefined ? (enabled ? 1 : 0) : 1);
     const feature = db.prepare('SELECT * FROM features WHERE id = ?').get(id);
     res.status(201).json(feature);
   } catch (err: any) {
@@ -177,15 +209,15 @@ app.post('/api/features', (req, res) => {
 });
 
 app.put('/api/features/:id', (req, res) => {
-  const { name, path, framework, description, enabled } = req.body;
+  const { name, framework, description, content, enabled } = req.body;
   const stmt = db.prepare(`
     UPDATE features
-    SET name = ?, path = ?, framework = ?, description = ?, enabled = ?, updatedAt = datetime('now')
+    SET name = ?, framework = ?, description = ?, content = ?, enabled = ?, updatedAt = datetime('now')
     WHERE id = ?
   `);
 
   try {
-    const result = stmt.run(name, path, framework, description || null, enabled !== undefined ? (enabled ? 1 : 0) : 1, req.params.id);
+    const result = stmt.run(name, framework, description || null, content, enabled !== undefined ? (enabled ? 1 : 0) : 1, req.params.id);
     if (result.changes === 0) return res.status(404).json({ error: 'Feature not found' });
     const feature = db.prepare('SELECT * FROM features WHERE id = ?').get(req.params.id);
     res.json(feature);
@@ -387,6 +419,42 @@ app.get('/api/test-runs/:id/logs', (req, res) => {
   if (!run) return res.status(404).json({ error: 'Test run not found' });
 
   res.json({ logs: run.resultJson || '' });
+});
+
+// ============================================================================
+// AI GHERKIN GENERATOR
+// ============================================================================
+app.post('/api/ai/gherkin', async (req, res) => {
+  try {
+    const { description, framework = 'playwright' } = req.body;
+
+    if (!description) {
+      return res.status(400).json({ error: 'Description required' });
+    }
+
+    const prompt = `You are a Gherkin/Cucumber expert. Convert the following test description into proper Gherkin format.
+
+Framework: ${framework === 'playwright' ? 'Web Testing (Playwright)' : 'Mobile Testing (WDIO/Appium)'}
+
+Rules:
+1. Start with "Feature: [Name]" followed by a brief description
+2. Create multiple realistic scenarios covering happy path and edge cases
+3. Use proper Gherkin keywords: Feature, Scenario, Given, When, Then, And, But
+4. Steps should be clear, actionable, and testable
+5. Include assertions in Then steps
+6. Keep scenarios focused and independent
+
+Test Description:
+${description}
+
+Return ONLY the Gherkin feature content, no explanations.`;
+
+    const content = await callAI(prompt);
+
+    res.json({ content });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ============================================================================
