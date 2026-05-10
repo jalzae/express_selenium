@@ -1,8 +1,8 @@
 <template>
   <div class="container">
     <div class="header">
-      <button class="btn-sm btn-secondary" @click="$router.back()">← Back</button>
-      <div>
+      <button class="btn-sm btn-secondary back-btn" @click="$router.back()">← Back</button>
+      <div class="header-title">
         <span class="badge" :class="testRunStore.getStatusBadge(run?.status || 'pending')">
           {{ run?.status }}
         </span>
@@ -43,7 +43,13 @@
             </div>
           </div>
           <div v-if="run.status === 'running'" class="progress-bar">
-            <div class="progress-fill"></div>
+            <div class="progress-info">
+              <span class="progress-label">Test in progress...</span>
+              <span class="progress-hint">Auto-refreshing every 2 seconds</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -65,21 +71,38 @@
       <!-- Results -->
       <div v-if="run.status !== 'pending' && run.status !== 'running'" class="results-section">
         <h3>Test Results</h3>
-        
+
+        <!-- Results Summary -->
+        <div class="results-summary">
+          <div class="summary-card" :class="`summary-${run.status}`">
+            <div class="summary-icon">
+              <span v-if="run.status === 'passed'">✅</span>
+              <span v-else-if="run.status === 'failed'">❌</span>
+              <span v-else-if="run.status === 'cancelled'">⏹️</span>
+              <span v-else>❓</span>
+            </div>
+            <div class="summary-info">
+              <h4>{{ run.status === 'passed' ? 'Tests Passed' : run.status === 'failed' ? 'Tests Failed' : run.status === 'cancelled' ? 'Tests Cancelled' : 'Tests Completed' }}</h4>
+              <p v-if="run.completedAt">Completed at {{ formatDate(run.completedAt) }}</p>
+              <p v-else>Test run finished</p>
+            </div>
+          </div>
+        </div>
+
         <div v-if="parsedResults?.cucumberResults?.length" class="cucumber-report">
-          <div v-for="feature in parsedResults.cucumberResults" :key="feature.id" class="feature-card">
+          <div v-for="feature in parsedResults.cucumberResults.filter(f => f?.elements?.length)" :key="feature.id || feature.name" class="feature-card">
             <div class="feature-header">
               <span class="feature-keyword">{{ feature.keyword }}:</span> {{ feature.name }}
             </div>
-            
+
             <div class="scenarios">
-              <div v-for="scenario in feature.elements" :key="scenario.id" class="scenario-block">
+              <div v-for="scenario in feature.elements.filter(e => e?.steps?.length)" :key="scenario.id || scenario.name" class="scenario-block">
                 <div class="scenario-header">
                   <span class="scenario-keyword">{{ scenario.keyword }}:</span> {{ scenario.name }}
                 </div>
-                
+
                 <div class="steps">
-                  <div v-for="(step, idx) in scenario.steps" :key="idx" v-show="!step.hidden" class="step-row">
+                  <div v-for="(step, idx) in scenario.steps.filter(s => !s.hidden && s.name)" :key="idx" class="step-row">
                     <div class="step-content">
                       <span class="step-status" :class="`status-${step.result?.status}`" :title="step.result?.status">
                         <span v-if="step.result?.status === 'passed'">✅</span>
@@ -106,6 +129,10 @@
 
         <div v-else-if="run.resultJson" class="results-json">
           <pre>{{ formatResults(run.resultJson) }}</pre>
+        </div>
+
+        <div v-else class="no-results">
+          <p>No test results available. The test may have failed before generating results.</p>
         </div>
       </div>
 
@@ -243,6 +270,26 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.back-btn {
+  flex-shrink: 0;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-title .badge {
+  flex-shrink: 0;
+}
+
 .header h2 {
   margin: 0;
 }
@@ -299,16 +346,40 @@ onUnmounted(() => {
 
 .progress-bar {
   margin-top: 1rem;
-  height: 4px;
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 0.5rem;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.progress-label {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.progress-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.progress-track {
+  height: 6px;
   background: var(--bg-tertiary);
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: var(--accent);
-  animation: progress 2s infinite;
+  background: linear-gradient(90deg, var(--accent) 0%, #8b5cf6 100%);
+  animation: progress 2s ease-in-out infinite;
 }
 
 @keyframes progress {
@@ -507,6 +578,65 @@ onUnmounted(() => {
 .step-error pre {
   margin: 0;
   color: #ef4444;
+  font-size: 0.875rem;
+}
+
+.no-results {
+  padding: 2rem;
+  text-align: center;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border);
+  border-radius: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.no-results p {
+  margin: 0;
+}
+
+/* Results Summary */
+.results-summary {
+  margin-bottom: 1.5rem;
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid;
+}
+
+.summary-card.summary-passed {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.summary-card.summary-failed {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.summary-card.summary-cancelled {
+  background: rgba(107, 114, 128, 0.1);
+  border-color: rgba(107, 114, 128, 0.3);
+}
+
+.summary-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.summary-info h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.summary-info p {
+  margin: 0;
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 </style>

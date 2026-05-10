@@ -222,6 +222,56 @@ Example: I want to test the login functionality. User should be able to login wi
                     <textarea id="visual-feature-desc" v-model="featureDescription" rows="2" class="feature-desc-input" placeholder="As a user, I want to..."></textarea>
                   </div>
 
+                  <!-- Background Section -->
+                  <div class="background-block">
+                    <div class="background-header">
+                      <h4>Background</h4>
+                      <span class="background-hint">Steps that run before each scenario</span>
+                    </div>
+                    <div class="steps-list">
+                      <div v-for="(step, stepIdx) in backgroundSteps" :key="`bg-${stepIdx}`" class="step-row">
+                        <select v-model="step.keyword" class="keyword-select">
+                          <option value="Given">Given</option>
+                          <option value="When">When</option>
+                          <option value="Then">Then</option>
+                          <option value="And">And</option>
+                          <option value="But">But</option>
+                        </select>
+
+                        <select v-model="step.stepDefId" @change="onBackgroundStepDefChange(step, stepIdx)" class="step-select">
+                          <option value="">Select step...</option>
+                          <option v-if="step.text && !step.matchedDef" value="" disabled class="step-unmatched-hint">
+                            ⚠️ {{ step.text }}
+                          </option>
+                          <optgroup v-for="cat in stepCategories" :key="cat.name" :label="cat.label">
+                            <option v-for="s in cat.steps" :key="s.id" :value="s.id">
+                              {{ s.name }}
+                            </option>
+                          </optgroup>
+                        </select>
+
+                        <div v-if="step.matchedDef" class="step-params-inline">
+                          <input v-for="param in step.matchedDef.parameters" :key="param.name"
+                            :placeholder="param.name"
+                            v-model="step.paramValues[param.name]"
+                            @input="updateBackgroundStepText(step)"
+                            class="param-input-inline" />
+                        </div>
+
+                        <button type="button" class="btn-icon" @click="removeBackgroundStep(stepIdx)" title="Remove step">✕</button>
+                        <button type="button" class="btn-icon" @click="moveBackgroundStep(stepIdx, -1)" title="Move up">↑</button>
+                        <button type="button" class="btn-icon" @click="moveBackgroundStep(stepIdx, 1)" title="Move down">↓</button>
+
+                        <span v-if="step.matchedDef" class="step-status valid">✓</span>
+                        <span v-else class="step-status invalid">⚠️</span>
+                      </div>
+
+                      <button type="button" class="btn-sm btn-secondary add-step-btn" @click="addBackgroundStep">
+                        + Add Background Step
+                      </button>
+                    </div>
+                  </div>
+
                   <!-- Scenarios -->
                   <div v-for="(scenario, sIdx) in scenarios" :key="sIdx" class="scenario-block">
                     <div class="scenario-header">
@@ -581,6 +631,7 @@ const stepCategories = computed(() => {
 const editorMode = ref<'visual' | 'code'>('visual')
 const featureName = ref('')
 const featureDescription = ref('')
+const backgroundSteps = ref<ScenarioStep[]>([])
 const newColumnName = ref<Record<number, string>>({})
 
 interface ScenarioStep {
@@ -613,6 +664,7 @@ function syncFromCodeToVisual() {
     scenarios.value = [{ name: 'New Scenario', isOutline: false, steps: [], examples: [] }]
     featureName.value = ''
     featureDescription.value = ''
+    backgroundSteps.value = []
     return
   }
 
@@ -620,16 +672,50 @@ function syncFromCodeToVisual() {
   const featureMatch = content.match(/^Feature:\s*(.+?)(?:\n|$)/i)
   if (featureMatch) featureName.value = featureMatch[1].trim()
 
-  // Parse description (lines between Feature and first Scenario)
+  // Parse content between Feature and first Scenario/Background
   const lines = content.split('\n')
   const descLines: string[] = []
-  for (const line of lines.slice(1)) {
-    if (line.match(/^\s*Scenario(?:\s+Outline)?:/i)) break
+  let backgroundStartIdx = -1
+  let firstScenarioIdx = -1
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i]
+    if (line.match(/^\s*Background:/i)) {
+      backgroundStartIdx = i
+      break
+    }
+    if (line.match(/^\s*Scenario(?:\s+Outline)?:/i)) {
+      firstScenarioIdx = i
+      break
+    }
+    // Skip user story lines for description
     if (line.trim() && !line.match(/^As a|I want|So that/)) {
       descLines.push(line.trim())
     }
   }
   featureDescription.value = descLines.join('\n')
+
+  // Parse Background steps if exists
+  backgroundSteps.value = []
+  if (backgroundStartIdx !== -1) {
+    const bgEndIdx = firstScenarioIdx !== -1 ? firstScenarioIdx : lines.length
+    for (let i = backgroundStartIdx + 1; i < bgEndIdx; i++) {
+      const line = lines[i]
+      const stepMatch = line.match(/^\s*(Given|When|Then|And|But)\s+(.+)$/i)
+      if (stepMatch) {
+        const keyword = stepMatch[1] as ScenarioStep['keyword']
+        const stepText = stepMatch[2].trim()
+        const matched = findMatchingStepDef(stepText)
+        backgroundSteps.value.push({
+          keyword,
+          stepDefId: matched?.id || '',
+          matchedDef: matched || null,
+          paramValues: extractParamValues(stepText, matched),
+          text: stepText
+        })
+      }
+    }
+  }
 
   // Parse scenarios (including Scenario Outline)
   const newScenarios: Scenario[] = []
@@ -704,6 +790,14 @@ function syncFromVisualToCode() {
 
   if (featureDescription.value) {
     content += `\n${featureDescription.value}\n`
+  }
+
+  // Add Background section if has steps
+  if (backgroundSteps.value.length > 0) {
+    content += `\n  Background:\n`
+    for (const step of backgroundSteps.value) {
+      content += `    ${step.keyword} ${step.text}\n`
+    }
   }
 
   for (const scenario of scenarios.value) {
@@ -806,6 +900,64 @@ function toggleScenarioOutline(scenarioIdx: number) {
 
 function removeScenario(idx: number) {
   scenarios.value.splice(idx, 1)
+  syncFromVisualToCode()
+}
+
+// Background steps functions
+function addBackgroundStep() {
+  backgroundSteps.value.push({
+    keyword: 'Given',
+    stepDefId: '',
+    matchedDef: null,
+    paramValues: {},
+    text: ''
+  })
+  syncFromVisualToCode()
+}
+
+function removeBackgroundStep(stepIdx: number) {
+  backgroundSteps.value.splice(stepIdx, 1)
+  syncFromVisualToCode()
+}
+
+function moveBackgroundStep(stepIdx: number, direction: number) {
+  const steps = backgroundSteps.value
+  const newIdx = stepIdx + direction
+  if (newIdx >= 0 && newIdx < steps.length) {
+    const [removed] = steps.splice(stepIdx, 1)
+    steps.splice(newIdx, 0, removed)
+    syncFromVisualToCode()
+  }
+}
+
+function onBackgroundStepDefChange(step: ScenarioStep, stepIdx: number) {
+  step.matchedDef = stepDefinitions.value.find(s => s.id === step.stepDefId) || null
+  if (step.matchedDef) {
+    step.paramValues = {}
+    if (step.matchedDef.parameters) {
+      for (const param of step.matchedDef.parameters) {
+        step.paramValues[param.name] = param.default || ''
+      }
+    }
+    updateBackgroundStepText(step)
+    syncFromVisualToCode()
+  }
+}
+
+function updateBackgroundStepText(step: ScenarioStep) {
+  if (!step.matchedDef) {
+    step.text = ''
+    return
+  }
+
+  let text = step.matchedDef.gherkinPattern
+  if (step.matchedDef.parameters) {
+    for (const param of step.matchedDef.parameters) {
+      const value = step.paramValues[param.name] || param.default || `<${param.name}>`
+      text = text.split(`{${param.name}}`).join(value)
+    }
+  }
+  step.text = text
   syncFromVisualToCode()
 }
 
@@ -2253,6 +2405,36 @@ watch(enabledFeatures, (newFeatures) => {
   resize: vertical;
 }
 
+/* Background Block */
+.background-block {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.background-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.background-header h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.background-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
 /* Scenario Block */
 .scenario-block {
   background: var(--bg-secondary);
@@ -2292,10 +2474,17 @@ watch(enabledFeatures, (newFeatures) => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem;
+  padding: 0.75rem;
   background: var(--bg-tertiary);
-  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
   flex-wrap: wrap;
+  transition: all 0.2s;
+}
+
+.step-row:hover {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
 }
 
 .keyword-select {
@@ -2312,11 +2501,11 @@ watch(enabledFeatures, (newFeatures) => {
   flex: 1;
   min-width: 200px;
   width: 100%;
-  padding: 0.4rem 0.5rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: 0.375rem;
   background: var(--bg-primary);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   margin-bottom: 0.5rem;
 }
 
@@ -2332,12 +2521,20 @@ watch(enabledFeatures, (newFeatures) => {
 }
 
 .param-input-inline {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 0.25rem;
-  background: var(--bg-primary);
-  font-size: 0.8rem;
-  min-width: 100px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 0.375rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  font-size: 0.85rem;
+  min-width: 120px;
+  font-family: monospace;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.param-input-inline::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
 }
 
 .step-status {
