@@ -18,7 +18,7 @@ export function startRecording(scenarioName: string): void {
 
   const platform = os.platform();
   let inputArgs: string[] = [];
-  const outputFile = path.join(RECORDINGS_DIR, `${scenarioName.replace(/[^a-z0-9]/gi, '_')}-${Date.now()}.mp4`);
+  const outputFile = path.join(RECORDINGS_DIR, `${scenarioName.replace(/[^a-z0-9-]/gi, '_')}-${Date.now()}.mp4`);
   recordingPaths.set(scenarioName, outputFile);
 
   if (platform === 'darwin') {

@@ -115,11 +115,11 @@
         <div class="artifacts-grid">
           <a v-for="rec in recordings" :key="rec" :href="`/recordings/${rec}`" target="_blank" class="artifact-card">
             <div class="artifact-icon">🎥</div>
-            <div>{{ rec.length > 20 ? rec.substring(0, 20) + '...' : rec }}</div>
+            <div class="artifact-name" :title="rec">{{ rec }}</div>
           </a>
           <a v-for="shot in screenshots" :key="shot" :href="`/screenshots/${shot}`" target="_blank" class="artifact-card">
-            <div class="artifact-icon">📸</div>
-            <div>{{ shot.split('/').pop() }}</div>
+            <img :src="`/screenshots/${shot}`" class="artifact-thumbnail" alt="Screenshot artifact preview" />
+            <div class="artifact-name" :title="shot.split('/').pop()">{{ shot.split('/').pop() }}</div>
           </a>
         </div>
       </div>
@@ -187,7 +187,7 @@ const parsedResults = computed(() => {
   }
 })
 
-let refreshInterval: number | null = null
+let refreshInterval: ReturnType<typeof setInterval> | null = null
 
 function formatDate(date: string) {
   return new Date(date).toLocaleString()
@@ -230,7 +230,7 @@ onMounted(async () => {
   await loadFeatures()
   await refresh()
 
-  refreshInterval = window.setInterval(async () => {
+  refreshInterval = globalThis.setInterval(async () => {
     if (run.value?.status === 'running') {
       await testRunStore.fetchTestRun(runId)
     }
@@ -340,7 +340,7 @@ onUnmounted(() => {
 
 .artifacts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1rem;
 }
 
@@ -349,13 +349,15 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  padding: 1.5rem;
+  padding: 1rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   text-decoration: none;
   color: var(--text-primary);
   transition: all 0.2s;
+  overflow: hidden;
+  text-align: center;
 }
 
 .artifact-card:hover {
@@ -364,7 +366,24 @@ onUnmounted(() => {
 }
 
 .artifact-icon {
-  font-size: 2rem;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.artifact-thumbnail {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 0.25rem;
+  background: #000;
+}
+
+.artifact-name {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.85rem;
 }
 
 .feature-list {

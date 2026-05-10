@@ -843,12 +843,13 @@ function extractParamValues(stepText: string, stepDef: StepDefinition | null): R
   let pattern = stepDef.gherkinPattern
   const regexStrs: string[] = []
 
+  // Escape regex specials first
+  pattern = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+
   for (const param of stepDef.parameters) {
-    pattern = pattern.replace(`\\{${param.name}\\}`, '(.+?)')
+    pattern = pattern.replace(`\\{${param.name}\\}`, '(.*?)')
     regexStrs.push(param.name)
   }
-
-  pattern = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
 
   try {
     const regex = new RegExp(`^${pattern}$`, 'i')
