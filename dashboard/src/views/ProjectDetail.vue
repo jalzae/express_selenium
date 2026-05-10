@@ -163,7 +163,7 @@
     <!-- Feature Modal -->
     <Teleport to="body">
       <div v-if="showFeatureModal" class="modal-overlay" @click.self="closeFeatureModal">
-        <div class="modal modal-large">
+        <div class="modal modal-xl">
           <div class="modal-header">
             <h3>{{ editingFeature ? 'Edit Feature' : 'New Feature' }}</h3>
             <button class="btn-icon" @click="closeFeatureModal">✕</button>
@@ -208,41 +208,111 @@ Example: I want to test the login functionality. User should be able to login wi
               </div>
 
               <div class="form-group">
-                <label class="form-label">Gherkin Feature *</label>
+                <label class="form-label">
+                  Gherkin Feature *
+                  <span v-if="gherkinError" class="error-text">⚠️ {{ gherkinError }}</span>
+                  <span v-else-if="gherkinValid" class="success-text">✓ Valid ({{ stepMatchCount }}/{{ totalSteps }} steps match library)</span>
+                </label>
+
+                <!-- Step Builder Section -->
+                <div class="step-builder-section">
+                  <div class="step-builder-controls">
+                    <select v-model="selectedStepCategory" @change="filterSteps" class="step-select">
+                      <option value="">📂 All Categories</option>
+                      <option value="navigation">🧭 Navigation</option>
+                      <option value="input">⌨️ Input</option>
+                      <option value="click">👆 Click</option>
+                      <option value="assertion">✓ Assertion</option>
+                      <option value="wait">⏱️ Wait</option>
+                      <option value="form">📋 Form</option>
+                      <option value="scroll">📜 Scroll</option>
+                    </select>
+                    <select v-model="selectedStepDef" class="step-select">
+                      <option value="">📝 Select a step to insert...</option>
+                      <option v-for="step in filteredStepDefs" :key="step.id" :value="step.id">
+                        {{ stepStore.getCategoryIcon(step.category || '') }} {{ step.name }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <!-- Selected Step Preview & Parameters -->
+                  <div v-if="selectedStepDefData" class="selected-step-card">
+                    <div class="step-pattern-preview">
+                      <strong>Pattern:</strong>
+                      <code>{{ selectedStepDefData.gherkinPattern }}</code>
+                    </div>
+                    <div v-if="selectedStepDefData.description" class="step-desc">
+                      {{ selectedStepDefData.description }}
+                    </div>
+                    <div v-if="selectedStepDefData.parameters && selectedStepDefData.parameters.length > 0" class="step-params-grid">
+                      <div v-for="param in selectedStepDefData.parameters" :key="param.name" class="param-field">
+                        <label>{{ param.name }}</label>
+                        <input
+                          :placeholder="param.default || `Enter ${param.name}`"
+                          v-model="paramValues[param.name]"
+                          @input="updateStepPreview"
+                          class="param-input" />
+                      </div>
+                    </div>
+                    <div class="step-preview-result">
+                      <strong>Will insert:</strong>
+                      <code class="preview-code">{{ stepPreviewText }}</code>
+                    </div>
+                    <button type="button" class="btn-primary" @click="insertStep">
+                      + Insert Step
+                    </button>
+                  </div>
+                </div>
+
                 <div class="gherkin-editor">
-                  <textarea v-model="featureForm.content" rows="14" required
+                  <textarea v-model="featureForm.content" @input="validateGherkin" rows="16" required
                     placeholder="Feature: Login Functionality
 
   Scenario: Successful login
-    Given user is on login page
-    When user enters valid credentials
-    And clicks login button
-    Then user should be redirected to dashboard"></textarea>
-                  <div class="gherkin-help">
-                    <h4>Gherkin Syntax</h4>
-                    <div class="syntax-item">
-                      <code>Feature:</code>
-                      <span>Feature description</span>
+    Given I navigate to &quot;https://example.com/login&quot;
+    When I enter &quot;user@example.com&quot; into input field having id &quot;email&quot;
+    And I enter &quot;password123&quot; into input field having id &quot;password&quot;
+    And I click on element having css selector &quot;button[type='submit']&quot;
+    Then the URL should contain &quot;/dashboard&quot;"></textarea>
+                  <div class="gherkin-sidebar">
+                    <!-- Validation Errors -->
+                    <div v-if="invalidSteps.length > 0" class="validation-errors">
+                      <h4>⚠️ Invalid Steps ({{ invalidSteps.length }})</h4>
+                      <div v-for="(err, idx) in invalidSteps" :key="idx" class="error-item">
+                        {{ err }}
+                      </div>
                     </div>
-                    <div class="syntax-item">
-                      <code>Scenario:</code>
-                      <span>Test scenario name</span>
+
+                    <!-- Valid Steps -->
+                    <div v-else-if="validStepsList.length > 0" class="valid-steps">
+                      <h4>✓ Valid Steps</h4>
+                      <div v-for="(step, idx) in validStepsList.slice(0, 5)" :key="idx" class="valid-item">
+                        {{ step }}
+                      </div>
+                      <div v-if="validStepsList.length > 5" class="more-count">
+                        +{{ validStepsList.length - 5 }} more
+                      </div>
                     </div>
-                    <div class="syntax-item">
-                      <code>Given</code>
-                      <span>Initial context</span>
-                    </div>
-                    <div class="syntax-item">
-                      <code>When</code>
-                      <span>Action performed</span>
-                    </div>
-                    <div class="syntax-item">
-                      <code>Then</code>
-                      <span>Expected outcome</span>
-                    </div>
-                    <div class="syntax-item">
-                      <code>And/But</code>
-                      <span>Additional steps</span>
+
+                    <!-- Quick Reference -->
+                    <div class="gherkin-help">
+                      <h4>Quick Reference</h4>
+                      <div class="syntax-item">
+                        <code>Feature:</code>
+                        <span>Feature name</span>
+                      </div>
+                      <div class="syntax-item">
+                        <code>Scenario:</code>
+                        <span>Test scenario</span>
+                      </div>
+                      <div class="syntax-item">
+                        <code>Given/When/Then</code>
+                        <span>Step keywords</span>
+                      </div>
+                      <div class="syntax-item">
+                        <code>And/But</code>
+                        <span>Additional steps</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -431,6 +501,27 @@ const stepForm = reactive({
   enabled: true
 })
 
+// Step Builder
+const selectedStepCategory = ref('')
+const selectedStepDef = ref('')
+const selectedStepDefData = ref<StepDefinition | null>(null)
+const paramValues = ref<Record<string, string>>({})
+const gherkinValid = ref(false)
+const gherkinError = ref('')
+const stepPreviewText = ref('')
+const invalidSteps = ref<string[]>([])
+const validStepsList = ref<string[]>([])
+const stepMatchCount = ref(0)
+const totalSteps = ref(0)
+
+const filteredStepDefs = computed(() => {
+  let steps = stepDefinitions.value
+  if (selectedStepCategory.value) {
+    steps = steps.filter(s => s.category === selectedStepCategory.value)
+  }
+  return steps
+})
+
 const defaultGherkin = `Feature: New Feature
   As a user
   I want to perform an action
@@ -579,6 +670,182 @@ async function generateWithAI() {
     alert('AI Generation failed: ' + err.message)
   } finally {
     aiGenerating.value = false
+  }
+}
+
+// Step Builder functions
+function filterSteps() {
+  selectedStepDef.value = ''
+  selectedStepDefData.value = null
+  paramValues.value = {}
+}
+
+watch(selectedStepDef, (newId) => {
+  if (newId) {
+    selectedStepDefData.value = stepDefinitions.value.find(s => s.id === newId) || null
+    paramValues.value = {}
+    // Set default values
+    if (selectedStepDefData.value?.parameters) {
+      for (const param of selectedStepDefData.value.parameters) {
+        paramValues.value[param.name] = param.default || ''
+      }
+    }
+  }
+})
+
+function insertStep() {
+  if (!selectedStepDefData.value) return
+
+  const step = selectedStepDefData.value
+  let stepText = step.gherkinPattern
+
+  // Replace parameters with values
+  if (step.parameters) {
+    for (const param of step.parameters) {
+      const value = paramValues.value[param.name] || param.default || `{${param.name}}`
+      stepText = stepText.replace(new RegExp(`\\{${param.name}\\}`, 'g'), value)
+    }
+  }
+
+  // Add proper indentation
+  const lines = featureForm.content.split('\n')
+  const lastLine = lines[lines.length - 1] || ''
+  const indent = lastLine.match(/^\s*/)?.[0] || '    '
+
+  // Determine keyword (default to And if there's already content)
+  const hasContent = featureForm.content.trim().length > 0
+  const keyword = hasContent ? '  And' : '  When'
+
+  featureForm.content += `\n${keyword} ${stepText}`
+  validateGherkin()
+
+  // Reset selection
+  selectedStepDef.value = ''
+  selectedStepDefData.value = null
+  paramValues.value = {}
+}
+
+function updateStepPreview() {
+  if (!selectedStepDefData.value) {
+    stepPreviewText.value = ''
+    return
+  }
+
+  const step = selectedStepDefData.value
+  let preview = step.gherkinPattern
+
+  // Replace parameters with values
+  if (step.parameters) {
+    for (const param of step.parameters) {
+      const value = paramValues.value[param.name] || param.default || `{${param.name}}`
+      preview = preview.replace(new RegExp(`\\{${param.name}\\}`, 'g'), value)
+    }
+  }
+
+  stepPreviewText.value = `  When ${preview}`
+}
+
+watch(selectedStepDef, (newId) => {
+  if (newId) {
+    selectedStepDefData.value = stepDefinitions.value.find(s => s.id === newId) || null
+    paramValues.value = {}
+    // Set default values
+    if (selectedStepDefData.value?.parameters) {
+      for (const param of selectedStepDefData.value.parameters) {
+        paramValues.value[param.name] = param.default || ''
+      }
+    }
+    updateStepPreview()
+  }
+})
+
+function validateGherkin() {
+  const content = featureForm.content.trim()
+  gherkinError.value = ''
+  gherkinValid.value = false
+  invalidSteps.value = []
+  validStepsList.value = []
+  stepMatchCount.value = 0
+  totalSteps.value = 0
+
+  if (!content) {
+    return
+  }
+
+  const errors: string[] = []
+
+  // Check for Feature keyword
+  if (!content.match(/^Feature:\s+/m)) {
+    errors.push('Missing "Feature:" keyword')
+  }
+
+  // Check for Scenario keyword
+  if (!content.match(/^\s*Scenario:\s+/m)) {
+    errors.push('Missing "Scenario:" keyword')
+  }
+
+  // Extract and validate each step
+  const stepLines = content.match(/^\s*(Given|When|Then|And|But)\s+(.+)$/gm)
+  if (stepLines) {
+    totalSteps.value = stepLines.length
+
+    for (const line of stepLines) {
+      const stepText = line.replace(/^\s*(Given|When|Then|And|But)\s+/, '')
+      let matched = false
+      let matchedPattern = ''
+
+      // Check against step definitions from database
+      for (const stepDef of stepDefinitions.value) {
+        // Convert gherkin pattern to regex
+        // e.g., "I enter {value} into input field having id {id}"
+        // becomes /^I enter (.+) into input field having id (.+)$/
+        let pattern = stepDef.gherkinPattern
+
+        // Escape special regex characters except for our placeholders
+        pattern = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+
+        // Replace {param} with capture group
+        pattern = pattern.replace(/\\{([^}]+)\\}/g, '(.+?)')
+
+        // Allow quotes (single or double) around parameters
+        pattern = pattern.replace(/\\(\\.\\+\\?\\)/g, '("([^"]*)"|\'([^\']*)\'|[^\\s]+)')
+
+        try {
+          if (new RegExp(`^${pattern}$`, 'i').test(stepText)) {
+            matched = true
+            matchedPattern = stepDef.gherkinPattern
+            stepMatchCount.value++
+            validStepsList.value.push(stepText)
+            break
+          }
+        } catch (e) {
+          // Invalid regex, skip
+        }
+      }
+
+      if (!matched) {
+        invalidSteps.value.push(`Step not in library: "${stepText}"`)
+      }
+    }
+  }
+
+  // Check for proper indentation
+  const lines = content.split('\n')
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i]
+    if (line.match(/^(Given|When|Then|And|But)/)) {
+      const indent = line.match(/^\s*/)?.[0]?.length || 0
+      if (indent === 0) {
+        errors.push('Step keywords need indentation')
+        break
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    gherkinError.value = errors[0]
+  } else if (invalidSteps.value.length === 0) {
+    gherkinValid.value = true
   }
 }
 
@@ -1315,4 +1582,211 @@ watch(enabledFeatures, (newFeatures) => {
 .badge-dark { background: #374151; color: white; }
 .badge-pink { background: #ec4899; color: white; }
 .badge-primary { background: #3b82f6; color: white; }
+
+/* Gherkin Sidebar */
+.gherkin-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Step Builder */
+.step-builder {
+  background: var(--bg-tertiary);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.step-builder h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.step-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--bg-primary);
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.step-params {
+  margin: 0.5rem 0;
+}
+
+.param-label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.param-input {
+  width: 100%;
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  background: var(--bg-primary);
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Validation messages */
+.error-text {
+  color: var(--error);
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+.success-text {
+  color: #10b981;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+/* Modal XL - Extra Large */
+.modal-xl {
+  max-width: 1200px;
+  width: 95%;
+}
+
+/* Step Builder Section */
+.step-builder-section {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.step-builder-controls {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.step-builder-controls .step-select {
+  flex: 1;
+}
+
+/* Selected Step Card */
+.selected-step-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.step-pattern-preview {
+  margin-bottom: 0.5rem;
+}
+
+.step-pattern-preview code {
+  display: block;
+  background: var(--bg-tertiary);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.step-desc {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.step-params-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.param-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.param-field label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.step-preview-result {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.step-preview-result strong {
+  display: block;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.preview-code {
+  display: block;
+  color: var(--accent);
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+/* Validation Errors */
+.validation-errors {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.validation-errors h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.75rem;
+  color: var(--error);
+}
+
+.error-item {
+  font-size: 0.7rem;
+  color: var(--error);
+  padding: 0.25rem 0;
+  word-break: break-word;
+}
+
+/* Valid Steps */
+.valid-steps {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.valid-steps h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.75rem;
+  color: #10b981;
+}
+
+.valid-item {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  padding: 0.15rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.more-count {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  padding: 0.25rem 0;
+}
 </style>

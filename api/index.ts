@@ -305,7 +305,7 @@ app.put('/api/projects/:id', (req, res) => {
           });
         }
       }
-      const stmt = db.prepare('UPDATE projects SET name = ?, type = ?, baseUrl = ?, mobileConfig = ?, updatedAt = datetime("now") WHERE id = ?');
+      const stmt = db.prepare("UPDATE projects SET name = ?, type = ?, baseUrl = ?, mobileConfig = ?, updatedAt = datetime('now') WHERE id = ?");
       const result = stmt.run(name, type, baseUrl || null, config, req.params.id);
       if (result.changes === 0) return res.status(404).json({ error: 'Project not found' });
     } else {
@@ -621,9 +621,9 @@ app.patch('/api/test-runs/:id', (req, res) => {
     updates.push('status = ?');
     values.push(status);
     if (status === 'running' && !req.body.startedAt) {
-      updates.push('startedAt = datetime("now")');
+      updates.push("startedAt = datetime('now')");
     } else if (['passed', 'failed', 'cancelled'].includes(status)) {
-      updates.push('completedAt = datetime("now")');
+      updates.push("completedAt = datetime('now')");
     }
   }
   if (recordingPath) {
@@ -690,7 +690,7 @@ app.post('/api/test-runs/:id/run', async (req, res) => {
   }
 
   // Update status to running
-  db.prepare('UPDATE test_runs SET status = ?, startedAt = datetime("now") WHERE id = ?').run('running', req.params.id);
+  db.prepare("UPDATE test_runs SET status = ?, startedAt = datetime('now') WHERE id = ?").run('running', req.params.id);
 
   // Spawn test runner
   const testRunnerPath = path.join(__dirname, 'test-runner.ts');
@@ -701,7 +701,7 @@ app.post('/api/test-runs/:id/run', async (req, res) => {
       TEST_RUN_ID: req.params.id,
       PROJECT_TYPE: project.type,
       BASE_URL: project.baseUrl || '',
-      HEADLESS: 'true'
+      HEADLESS: 'false'
     }
   });
 
@@ -720,14 +720,14 @@ app.post('/api/test-runs/:id/run', async (req, res) => {
     runningTests.delete(req.params.id);
     const status = code === 0 ? 'passed' : 'failed';
     const errorMessage = code === 0 ? null : output.slice(0, 1000);
-    db.prepare('UPDATE test_runs SET status = ?, completedAt = datetime("now"), errorMessage = ? WHERE id = ?')
+    db.prepare("UPDATE test_runs SET status = ?, completedAt = datetime('now'), errorMessage = ? WHERE id = ?")
       .run(status, errorMessage, req.params.id);
   });
 
   child.on('error', (err) => {
     runningTests.delete(req.params.id);
     console.error('[TestRunner] Failed to spawn:', err);
-    db.prepare('UPDATE test_runs SET status = ?, errorMessage = ?, completedAt = datetime("now") WHERE id = ?')
+    db.prepare("UPDATE test_runs SET status = ?, errorMessage = ?, completedAt = datetime('now') WHERE id = ?")
       .run('failed', `Failed to start test runner: ${err.message}`, req.params.id);
   });
 
@@ -741,7 +741,7 @@ app.post('/api/test-runs/:id/stop', (req, res) => {
   child.kill('SIGTERM');
   runningTests.delete(req.params.id);
 
-  db.prepare('UPDATE test_runs SET status = ?, completedAt = datetime("now") WHERE id = ?')
+  db.prepare("UPDATE test_runs SET status = ?, completedAt = datetime('now') WHERE id = ?")
     .run('cancelled', req.params.id);
 
   res.json({ message: 'Test stopped' });

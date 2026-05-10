@@ -36,7 +36,7 @@ console.log(`[TestRunner] Features: ${features.map((f) => f.name).join(', ')}`);
 console.log(`[TestRunner] Record: ${run.recordTestRun ? 'YES' : 'NO'}, Screenshots: ${run.takeScreenshots ? 'YES' : 'NO'}`);
 
 // Update status to running
-db.prepare('UPDATE test_runs SET status = ?, startedAt = datetime("now") WHERE id = ?').run('running', TEST_RUN_ID);
+db.prepare("UPDATE test_runs SET status = ?, startedAt = datetime('now') WHERE id = ?").run('running', TEST_RUN_ID);
 
 // Create results directory
 const resultsDir = path.join(process.cwd(), 'test-results', TEST_RUN_ID);
@@ -61,7 +61,7 @@ const env = {
   RECORD_TEST_RUN: run.recordTestRun ? '1' : '0',
   TAKE_SCREENSHOTS: run.takeScreenshots ? '1' : '0',
   BASE_URL: project.baseUrl || '',
-  HEADLESS: 'true',
+  HEADLESS: 'false',
 };
 
 // Add mobile config if applicable

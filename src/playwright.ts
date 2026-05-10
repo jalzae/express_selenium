@@ -120,10 +120,16 @@ function toCssSelector(prefix: string, rawValue: string): string {
  */
 export async function openBrowser(): Promise<Page> {
   const engine = getBrowserEngine();
-  const headless = String(process.env.HEADLESS ?? 'false') !== 'false';
+  const headless = process.env.HEADLESS === 'true';
   const launcher = engine === 'firefox' ? firefox : engine === 'webkit' ? webkit : chromium;
 
-  const browser: Browser = await launcher.launch({ headless });
+  console.log(`[Playwright] Launching browser: engine=${engine}, headless=${headless}, HEADLESS env=${process.env.HEADLESS}`);
+
+  const browser: Browser = await launcher.launch({
+    headless,
+    // Add these for macOS to make window more visible
+    args: headless ? [] : ['--start-maximized']
+  });
   const context: BrowserContext = await browser.newContext();
   const page: Page = await context.newPage();
   try {
