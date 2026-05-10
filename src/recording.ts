@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import os from 'os';
 
-const RECORDINGS_DIR = path.join(__dirname, '../recordings');
+const RECORDINGS_DIR = path.join(__dirname, '../dashboard/public/recordings');
 if (!fs.existsSync(RECORDINGS_DIR)) fs.mkdirSync(RECORDINGS_DIR, { recursive: true });
 
 const activeRecordings: Map<string, ChildProcessWithoutNullStreams> = new Map();

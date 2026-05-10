@@ -27,7 +27,7 @@ After(async function (scenario) {
     // Take screenshot if enabled
     if (TAKE_SCREENSHOTS && sessionPage) {
       try {
-        const dir = path.join(process.cwd(), 'screenshots');
+        const dir = path.join(process.cwd(), 'dashboard/public/screenshots');
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
         // Include test run ID and scenario name in filename
@@ -51,7 +51,7 @@ After(async function (scenario) {
 
     // Selenium driver screenshot (legacy/fallback)
     if (TAKE_SCREENSHOTS && this.driver) {
-      const dir = path.join(process.cwd(), 'screenshots');
+      const dir = path.join(process.cwd(), 'dashboard/public/screenshots');
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
       const safe = scenario.pickle.name.replace(/[^a-z0-9]/gi, '_');

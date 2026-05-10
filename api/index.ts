@@ -56,8 +56,8 @@ app.use(cors());
 app.use(express.json());
 
 // Static files for recordings and screenshots
-app.use('/recordings', express.static(path.join(__dirname, '../recordings')));
-app.use('/screenshots', express.static(path.join(__dirname, '../screenshots')));
+app.use('/recordings', express.static(path.join(__dirname, '../dashboard/public/recordings')));
+app.use('/screenshots', express.static(path.join(__dirname, '../dashboard/public/screenshots')));
 
 // ============================================================================
 // SCHEMA

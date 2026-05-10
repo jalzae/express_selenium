@@ -66,7 +66,7 @@ const env = {
 
 // Add mobile config if applicable
 if (project.type === 'mobile') {
-  let mobileConfig = {};
+  let mobileConfig: any = {};
   if (project.mobileConfig) {
     try {
       mobileConfig = JSON.parse(project.mobileConfig);
@@ -139,7 +139,7 @@ cucumber.on('close', async (code) => {
   // Collect screenshots
   const screenshots: string[] = [];
   if (run.takeScreenshots) {
-    const screenshotsDir = path.join(process.cwd(), 'screenshots');
+    const screenshotsDir = path.join(process.cwd(), 'dashboard/public/screenshots');
     if (fs.existsSync(screenshotsDir)) {
       const files = fs.readdirSync(screenshotsDir);
       for (const file of files) {
@@ -153,7 +153,7 @@ cucumber.on('close', async (code) => {
   // Collect recordings
   const recordings: string[] = [];
   if (run.recordTestRun) {
-    const recordingsDir = path.join(process.cwd(), 'recordings');
+    const recordingsDir = path.join(process.cwd(), 'dashboard/public/recordings');
     if (fs.existsSync(recordingsDir)) {
       const files = fs.readdirSync(recordingsDir);
       for (const file of files) {
