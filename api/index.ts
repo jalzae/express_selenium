@@ -44,7 +44,6 @@ async function callAI(prompt: string): Promise<string> {
   return data.choices?.[0]?.message?.content || '';
 }
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.API_PORT || 3001;
 
