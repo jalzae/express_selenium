@@ -105,6 +105,42 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_test_runs_project ON test_runs(projectId);
 `);
 
+// Migration: Add missing columns for existing databases
+const featureColumns = db.prepare("PRAGMA table_info(features)").all() as any[];
+const hasContentColumn = featureColumns.some((col: any) => col.name === 'content');
+if (!hasContentColumn) {
+  db.exec('ALTER TABLE features ADD COLUMN content TEXT');
+}
+
+// Migration: Drop legacy path column if it exists (SQLite requires recreating table)
+const hasPathColumn = featureColumns.some((col: any) => col.name === 'path');
+if (hasPathColumn) {
+  db.exec(`
+    CREATE TABLE features_new (
+      id TEXT PRIMARY KEY,
+      projectId TEXT NOT NULL,
+      name TEXT NOT NULL,
+      framework TEXT CHECK(framework IN ('playwright', 'wdio')),
+      description TEXT,
+      content TEXT NOT NULL,
+      enabled INTEGER DEFAULT 1,
+      createdAt TEXT DEFAULT (datetime('now')),
+      updatedAt TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
+    );
+    INSERT INTO features_new SELECT id, projectId, name, framework, description, content, enabled, createdAt, updatedAt FROM features;
+    DROP TABLE features;
+    ALTER TABLE features_new RENAME TO features;
+    CREATE INDEX IF NOT EXISTS idx_features_project ON features(projectId);
+  `);
+}
+
+const projectColumns = db.prepare("PRAGMA table_info(projects)").all() as any[];
+const hasMobileConfigColumn = projectColumns.some((col: any) => col.name === 'mobileConfig');
+if (!hasMobileConfigColumn) {
+  db.exec('ALTER TABLE projects ADD COLUMN mobileConfig TEXT');
+}
+
 // ============================================================================
 // UTILS
 // ============================================================================
@@ -268,7 +304,8 @@ app.post('/api/features', (req, res) => {
   `);
 
   try {
-    stmt.run(id, projectId, name, framework, description || null, content, enabled !== undefined ? (enabled ? 1 : 0) : 1);
+    const enabledValue = enabled ?? 1;
+    stmt.run(id, projectId, name, framework, description || null, content, enabledValue);
     const feature = db.prepare('SELECT * FROM features WHERE id = ?').get(id);
     res.status(201).json(feature);
   } catch (err: any) {
@@ -285,7 +322,8 @@ app.put('/api/features/:id', (req, res) => {
   `);
 
   try {
-    const result = stmt.run(name, framework, description || null, content, enabled !== undefined ? (enabled ? 1 : 0) : 1, req.params.id);
+    const enabledValue = enabled ?? 1;
+    const result = stmt.run(name, framework, description || null, content, enabledValue, req.params.id);
     if (result.changes === 0) return res.status(404).json({ error: 'Feature not found' });
     const feature = db.prepare('SELECT * FROM features WHERE id = ?').get(req.params.id);
     res.json(feature);
@@ -419,11 +457,11 @@ import { spawn } from 'node:child_process';
 const runningTests = new Map<string, any>();
 
 app.post('/api/test-runs/:id/run', async (req, res) => {
-  const run = db.prepare('SELECT * FROM test_runs WHERE id = ?').get(req.params.id);
+  const run = db.prepare('SELECT * FROM test_runs WHERE id = ?').get(req.params.id) as any;
   if (!run) return res.status(404).json({ error: 'Test run not found' });
   if (run.status === 'running') return res.status(400).json({ error: 'Test already running' });
 
-  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(run.projectId);
+  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(run.projectId) as any;
   if (!project) return res.status(404).json({ error: 'Project not found' });
 
   const featureIds = JSON.parse(run.featureIds);
@@ -461,8 +499,9 @@ app.post('/api/test-runs/:id/run', async (req, res) => {
   child.on('close', (code) => {
     runningTests.delete(req.params.id);
     const status = code === 0 ? 'passed' : 'failed';
+    const errorMessage = code === 0 ? null : output.slice(0, 1000);
     db.prepare('UPDATE test_runs SET status = ?, completedAt = datetime("now"), errorMessage = ? WHERE id = ?')
-      .run(status, code !== 0 ? output.slice(0, 1000) : null, req.params.id);
+      .run(status, errorMessage, req.params.id);
   });
 
   res.json({ message: 'Test started', runId: req.params.id });
