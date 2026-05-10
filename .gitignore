@@ -9,3 +9,9 @@ screenshots/*.*
 recordings/*.*
 logs/*.*
 /.env
+android/report/*.*
+web/report/*.*
+e2e-dashboard.db
+test-results
+dashboard/dist
+dashboard/node_modules
