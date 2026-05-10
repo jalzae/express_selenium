@@ -263,6 +263,10 @@ Example: I want to test the login functionality. User should be able to login wi
 
                         <select v-model="step.stepDefId" @change="onStepDefChange(step, sIdx, stepIdx)" class="step-select">
                           <option value="">Select step...</option>
+                          <!-- Show raw parsed text as hint when step has text but no match -->
+                          <option v-if="step.text && !step.matchedDef" value="" disabled class="step-unmatched-hint">
+                            ⚠️ {{ step.text }}
+                          </option>
                           <optgroup v-for="cat in stepCategories" :key="cat.name" :label="cat.label">
                             <option v-for="s in cat.steps" :key="s.id" :value="s.id">
                               {{ s.name }}
@@ -942,7 +946,7 @@ function moveStep(scenarioIdx: number, stepIdx: number, direction: number) {
   }
 }
 
-function onStepDefChange(step: ScenarioStep, scenarioIdx: number, stepIdx: number) {
+function onStepDefChange(step: ScenarioStep, scenarioIdx: number, _stepIdx: number) {
   step.matchedDef = stepDefinitions.value.find(s => s.id === step.stepDefId) || null
   if (step.matchedDef) {
     // Initialize param values with defaults
@@ -1257,11 +1261,6 @@ function insertStep() {
       stepText = stepText.split(`{${param.name}}`).join(value)
     }
   }
-
-  // Add proper indentation
-  const lines = featureForm.content.split('\n')
-  const lastLine = lines[lines.length - 1] || ''
-  const indent = lastLine.match(/^\s*/)?.[0] || '    '
 
   // Determine keyword (default to And if there's already content)
   const hasContent = featureForm.content.trim().length > 0
