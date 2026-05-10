@@ -15,6 +15,10 @@
             <span>📁</span>
             <span>Projects</span>
           </router-link>
+          <router-link to="/steps" class="nav-link">
+            <span>📚</span>
+            <span>Steps</span>
+          </router-link>
           <router-link to="/test-runs" class="nav-link">
             <span>🚀</span>
             <span>Test Runs</span>

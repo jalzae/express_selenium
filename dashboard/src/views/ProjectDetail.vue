@@ -68,50 +68,6 @@
       </div>
     </div>
 
-    <!-- Step Library Section -->
-    <div class="steps-section">
-      <div class="section-header">
-        <h3>Step Library</h3>
-        <div class="header-actions">
-          <button class="btn-sm btn-secondary" @click="importSteps" :disabled="importing">
-            {{ importing ? 'Importing...' : '📥 Import from Playwright' }}
-          </button>
-          <button class="btn-sm btn-primary" @click="openStepModal()">+ Add Step</button>
-        </div>
-      </div>
-      <div class="steps-grid" v-if="stepDefinitions.length">
-        <div v-for="step in stepDefinitions" :key="step.id" class="step-card">
-          <div class="step-header">
-            <span class="step-icon">{{ stepStore.getCategoryIcon(step.category || '') }}</span>
-            <div class="step-info">
-              <span class="step-name">{{ step.name }}</span>
-              <span class="badge" :class="stepStore.getCategoryColor(step.category || '')">{{ step.category }}</span>
-            </div>
-            <div class="step-actions">
-              <button class="btn-icon" @click="editStep(step)" title="Edit">✏️</button>
-              <button class="btn-icon" @click="confirmDeleteStep(step)" title="Delete">🗑️</button>
-            </div>
-          </div>
-          <div class="step-body">
-            <code class="gherkin-pattern">{{ step.gherkinPattern }}</code>
-            <div class="step-meta">
-              <span class="function">→ {{ step.playwrightFunction }}()</span>
-              <span class="params-count">{{ step.parameters?.length || 0 }} params</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div v-else class="empty-state">
-        <div class="empty-icon">📚</div>
-        <h4>No step definitions yet</h4>
-        <p>Import from Playwright library or create custom steps</p>
-        <div class="flex gap-2">
-          <button class="btn-primary" @click="importSteps">📥 Import from Playwright</button>
-          <button class="btn-secondary" @click="openStepModal()">+ Add Custom Step</button>
-        </div>
-      </div>
-    </div>
-
     <!-- Run Tests Section -->
     <div class="run-section">
       <h3>Run Tests</h3>
@@ -482,102 +438,6 @@ Example: I want to test the login functionality. User should be able to login wi
         </div>
       </div>
     </Teleport>
-
-    <!-- Step Definition Modal -->
-    <Teleport to="body">
-      <div v-if="showStepModal" class="modal-overlay" @click.self="closeStepModal">
-        <div class="modal modal-large">
-          <div class="modal-header">
-            <h3>{{ editingStep ? 'Edit Step Definition' : 'New Step Definition' }}</h3>
-            <button class="btn-icon" @click="closeStepModal">✕</button>
-          </div>
-          <form @submit.prevent="saveStep">
-            <div class="modal-body">
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Step Name *</label>
-                  <input v-model="stepForm.name" required placeholder="e.g., Navigate to URL" />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Category *</label>
-                  <select v-model="stepForm.category" required>
-                    <option value="navigation">🧭 Navigation</option>
-                    <option value="input">⌨️ Input</option>
-                    <option value="click">👆 Click</option>
-                    <option value="assertion">✓ Assertion</option>
-                    <option value="wait">⏱️ Wait</option>
-                    <option value="screenshot">📸 Screenshot</option>
-                    <option value="form">📋 Form</option>
-                    <option value="scroll">📜 Scroll</option>
-                    <option value="script">🔧 Script</option>
-                    <option value="attribute">🏷️ Attribute</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Gherkin Pattern *</label>
-                <input v-model="stepForm.gherkinPattern" required
-                  placeholder="e.g., I navigate to {url}" />
-                <p class="help-text">Use {paramName} for dynamic parameters</p>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Playwright Function *</label>
-                <input v-model="stepForm.playwrightFunction" required
-                  placeholder="e.g., goTo, click, input" />
-                <p class="help-text">Function name from src/playwright.ts</p>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Description</label>
-                <input v-model="stepForm.description" placeholder="What this step does..." />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Parameters</label>
-                <div class="params-editor">
-                  <div v-for="(param, idx) in stepForm.parameters" :key="idx" class="param-row">
-                    <input v-model="param.name" placeholder="Name" required />
-                    <select v-model="param.type">
-                      <option value="string">String</option>
-                      <option value="number">Number</option>
-                      <option value="boolean">Boolean</option>
-                    </select>
-                    <input v-model="param.default" placeholder="Default value (optional)" />
-                    <button type="button" class="btn-icon btn-error" @click="stepForm.parameters.splice(idx, 1)">✕</button>
-                  </div>
-                  <button type="button" class="btn-sm btn-secondary" @click="stepForm.parameters.push({ name: '', type: 'string' })">
-                    + Add Parameter
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn-secondary" @click="closeStepModal">Cancel</button>
-              <button type="submit" class="btn-primary">
-                {{ editingStep ? 'Save Changes' : 'Create Step' }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Delete Step Confirmation -->
-    <Teleport to="body">
-      <div v-if="deletingStep" class="modal-overlay" @click.self="deletingStep = null">
-        <div class="modal modal-small">
-          <div class="modal-header">
-            <h3>Delete Step?</h3>
-          </div>
-          <div class="modal-body">
-            <p>Are you sure you want to delete <strong>{{ deletingStep.name }}</strong>?</p>
-            <p class="warning">This action cannot be undone.</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn-secondary" @click="deletingStep = null">Cancel</button>
-            <button class="btn-error" @click="deleteStep">Delete</button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -610,22 +470,6 @@ const takeScreenshots = ref(true)
 const aiGenerating = ref(false)
 const aiDescription = ref('')
 const dragIdx = ref<number | null>(null)
-
-// Step definitions
-const showStepModal = ref(false)
-const editingStep = ref<StepDefinition | null>(null)
-const deletingStep = ref<StepDefinition | null>(null)
-const importing = ref(false)
-
-const stepForm = reactive({
-  name: '',
-  category: 'navigation' as StepDefinition['category'],
-  gherkinPattern: '',
-  playwrightFunction: '',
-  parameters: [] as Array<{ name: string; type: 'string' | 'number' | 'boolean'; default?: string }>,
-  description: '',
-  enabled: true
-})
 
 // Step Builder
 const selectedStepCategory = ref('')
@@ -1397,78 +1241,6 @@ function validateGherkin() {
   }
 }
 
-// Step Definition functions
-function openStepModal() {
-  editingStep.value = null
-  resetStepForm()
-  showStepModal.value = true
-}
-
-function closeStepModal() {
-  showStepModal.value = false
-  editingStep.value = null
-  resetStepForm()
-}
-
-function editStep(step: StepDefinition) {
-  editingStep.value = step
-  Object.assign(stepForm, {
-    name: step.name,
-    category: step.category,
-    gherkinPattern: step.gherkinPattern,
-    playwrightFunction: step.playwrightFunction,
-    parameters: step.parameters ? [...step.parameters] : [],
-    description: step.description || '',
-    enabled: !!step.enabled
-  })
-  showStepModal.value = true
-}
-
-function confirmDeleteStep(step: StepDefinition) {
-  deletingStep.value = step
-}
-
-async function saveStep() {
-  const data = { ...stepForm, projectId, enabled: stepForm.enabled ? 1 : 0 }
-  if (editingStep.value) {
-    await stepStore.updateStepDefinition(editingStep.value.id, data)
-  } else {
-    await stepStore.createStepDefinition(data)
-  }
-  closeStepModal()
-  await stepStore.fetchStepDefinitions(projectId)
-}
-
-async function deleteStep() {
-  if (deletingStep.value) {
-    await stepStore.deleteStepDefinition(deletingStep.value.id)
-    deletingStep.value = null
-  }
-}
-
-async function importSteps() {
-  importing.value = true
-  try {
-    await stepStore.importFromLibrary(projectId, 'playwright')
-  } catch (err: any) {
-    alert('Import failed: ' + err.message)
-  } finally {
-    importing.value = false
-  }
-}
-
-function resetStepForm() {
-  Object.assign(stepForm, {
-    name: '',
-    category: 'navigation',
-    gherkinPattern: '',
-    playwrightFunction: '',
-    parameters: [],
-    description: '',
-    enabled: true
-  })
-}
-
 onMounted(() => {
   projectStore.fetchFeatures(projectId)
   testRunStore.fetchTestRuns(projectId)
@@ -2019,16 +1791,6 @@ watch(enabledFeatures, (newFeatures) => {
   background: var(--bg-primary);
   border: 1px solid var(--border);
   resize: vertical;
-}
-
-/* Step Library */
-.steps-section {
-  margin-bottom: 2.5rem;
-}
-
-.header-actions {
-  display: flex;
-  gap: 0.5rem;
 }
 
 .steps-grid {
