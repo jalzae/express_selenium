@@ -230,7 +230,7 @@ function parseProject(project: any) {
 }
 
 app.post('/api/projects', (req, res) => {
-  const { name, type, baseUrl, mobileConfig, appPackage, appActivity, deviceName, platformVersion, automationName, appiumPath, appiumHost, appiumPort } = req.body;
+  const { name, type, baseUrl, mobileConfig, appPackage, appActivity, deviceName, platformVersion, automationName, appiumPath, appiumHost, appiumPort, apkPath } = req.body;
 
   if (!name || !type) {
     return res.status(400).json({ error: 'name and type are required' });
@@ -256,7 +256,8 @@ app.post('/api/projects', (req, res) => {
         automationName,
         appiumPath: appiumPath || '/',
         appiumHost: appiumHost || 'localhost',
-        appiumPort: appiumPort || '4723'
+        appiumPort: appiumPort || '4723',
+        apkPath: apkPath || ''
       });
     }
   }
@@ -287,7 +288,7 @@ app.post('/api/projects', (req, res) => {
 });
 
 app.put('/api/projects/:id', (req, res) => {
-  const { name, type, baseUrl, mobileConfig, appPackage, appActivity, deviceName, platformVersion, automationName, appiumPath, appiumHost, appiumPort } = req.body;
+  const { name, type, baseUrl, mobileConfig, appPackage, appActivity, deviceName, platformVersion, automationName, appiumPath, appiumHost, appiumPort, apkPath } = req.body;
 
   const tableInfo = db.prepare("PRAGMA table_info(projects)").all();
   const hasMobileConfig = tableInfo.some((col: any) => col.name === 'mobileConfig');
@@ -301,7 +302,8 @@ app.put('/api/projects/:id', (req, res) => {
         } else if (appPackage || deviceName) {
           config = JSON.stringify({
             appPackage, appActivity, deviceName, platformVersion, automationName,
-            appiumPath: appiumPath || '/', appiumHost: appiumHost || 'localhost', appiumPort: appiumPort || '4723'
+            appiumPath: appiumPath || '/', appiumHost: appiumHost || 'localhost', appiumPort: appiumPort || '4723',
+            apkPath: apkPath || ''
           });
         }
       }

@@ -11,6 +11,10 @@ export interface Project {
   deviceName?: string
   platformVersion?: string
   automationName?: string
+  appiumHost?: string
+  appiumPort?: string
+  appiumPath?: string
+  apkPath?: string
   createdAt: string
   updatedAt: string
 }

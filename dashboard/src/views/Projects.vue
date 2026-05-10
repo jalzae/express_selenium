@@ -121,6 +121,28 @@
                   <label class="form-label">Appium Path</label>
                   <input v-model="projectForm.appiumPath" placeholder="/wd/hub" />
                 </div>
+                <div class="form-group">
+                  <label class="form-label">APK File Name</label>
+                  <div class="file-input-wrapper">
+                    <input
+                      type="file"
+                      accept=".apk"
+                      @change="onApkFileSelected"
+                      class="file-input"
+                      id="apk-file-input"
+                      ref="apkFileInput"
+                    />
+                    <button type="button" class="btn-sm btn-secondary" @click="selectApkFile">
+                      📁 Browse APK
+                    </button>
+                    <input
+                      v-model="projectForm.apkPath"
+                      placeholder="app-release.apk"
+                      class="apk-name-input"
+                    />
+                  </div>
+                  <p class="help-text">Enter APK filename. Make sure the APK is accessible to Appium server.</p>
+                </div>
               </template>
             </div>
             <div class="modal-footer">
@@ -166,6 +188,9 @@ const showProjectModal = ref(false)
 const editingProject = ref<Project | null>(null)
 const deletingProject = ref<Project | null>(null)
 
+// APK file input ref
+const apkFileInput = ref<HTMLInputElement | null>(null)
+
 const projectForm = reactive({
   name: '',
   type: 'web' as 'web' | 'mobile',
@@ -177,7 +202,8 @@ const projectForm = reactive({
   automationName: '',
   appiumHost: 'localhost',
   appiumPort: '4723',
-  appiumPath: '/'
+  appiumPath: '/',
+  apkPath: ''
 })
 
 function openProjectModal() {
@@ -199,7 +225,8 @@ function editProject(project: Project) {
     automationName: project.automationName || '',
     appiumHost: project.appiumHost || 'localhost',
     appiumPort: project.appiumPort || '4723',
-    appiumPath: project.appiumPath || '/'
+    appiumPath: project.appiumPath || '/',
+    apkPath: project.apkPath || ''
   })
   showProjectModal.value = true
 }
@@ -238,8 +265,22 @@ function resetForm() {
     automationName: '',
     appiumHost: 'localhost',
     appiumPort: '4723',
-    appiumPath: '/'
+    appiumPath: '/',
+    apkPath: ''
   })
+}
+
+function selectApkFile() {
+  apkFileInput.value?.click()
+}
+
+function onApkFileSelected(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    // Just set the filename (browsers don't allow full path for security)
+    projectForm.apkPath = file.name
+  }
 }
 </script>
 
@@ -479,5 +520,27 @@ function resetForm() {
   margin-top: 0;
   padding-top: 0;
   border-top: none;
+}
+
+/* File Input Styles */
+.file-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.file-input {
+  display: none;
+}
+
+.apk-name-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: monospace;
 }
 </style>
