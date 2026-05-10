@@ -104,6 +104,23 @@
                   <label class="form-label">Automation Name</label>
                   <input v-model="projectForm.automationName" placeholder="UiAutomator2" />
                 </div>
+
+                <!-- Appium Connection -->
+                <div class="form-section-title">Appium Server Configuration</div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Appium Host</label>
+                    <input v-model="projectForm.appiumHost" placeholder="localhost" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Appium Port</label>
+                    <input v-model="projectForm.appiumPort" placeholder="4723" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Appium Path</label>
+                  <input v-model="projectForm.appiumPath" placeholder="/wd/hub" />
+                </div>
               </template>
             </div>
             <div class="modal-footer">
@@ -157,7 +174,10 @@ const projectForm = reactive({
   platformVersion: '',
   appPackage: '',
   appActivity: '',
-  automationName: ''
+  automationName: '',
+  appiumHost: 'localhost',
+  appiumPort: '4723',
+  appiumPath: '/'
 })
 
 function openProjectModal() {
@@ -176,7 +196,10 @@ function editProject(project: Project) {
     platformVersion: project.platformVersion || '',
     appPackage: project.appPackage || '',
     appActivity: project.appActivity || '',
-    automationName: project.automationName || ''
+    automationName: project.automationName || '',
+    appiumHost: project.appiumHost || 'localhost',
+    appiumPort: project.appiumPort || '4723',
+    appiumPath: project.appiumPath || '/'
   })
   showProjectModal.value = true
 }
@@ -212,7 +235,10 @@ function resetForm() {
     platformVersion: '',
     appPackage: '',
     appActivity: '',
-    automationName: ''
+    automationName: '',
+    appiumHost: 'localhost',
+    appiumPort: '4723',
+    appiumPath: '/'
   })
 }
 </script>
@@ -436,5 +462,22 @@ function resetForm() {
   gap: 0.75rem;
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--border);
+}
+
+.form-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin: 1rem 0 0.75rem 0;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border);
+}
+
+.form-section-title:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 </style>

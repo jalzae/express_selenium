@@ -3,6 +3,13 @@ import cors from 'cors';
 import Database from 'better-sqlite3';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { config } from 'dotenv';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env from parent directory (project root)
+config({ path: path.join(__dirname, '..', '.env') });
 
 // AI Configuration (set via env vars)
 const ZAI_BASE_URL = process.env.ZAI_BASE_URL || 'https://api.zyphra.ai/v1';
@@ -62,11 +69,8 @@ db.exec(`
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK(type IN ('web', 'mobile')),
     baseUrl TEXT,
-    appPackage TEXT,
-    appActivity TEXT,
-    deviceName TEXT,
-    platformVersion TEXT,
-    automationName TEXT,
+    -- Mobile Config (stored as JSON for flexibility)
+    mobileConfig TEXT,
     createdAt TEXT DEFAULT (datetime('now')),
     updatedAt TEXT DEFAULT (datetime('now'))
   );
@@ -112,17 +116,30 @@ const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11
 // ============================================================================
 app.get('/api/projects', (req, res) => {
   const projects = db.prepare('SELECT * FROM projects ORDER BY createdAt DESC').all();
-  res.json(projects);
+  res.json(projects.map((p: any) => parseProject(p)));
 });
 
 app.get('/api/projects/:id', (req, res) => {
   const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id);
   if (!project) return res.status(404).json({ error: 'Project not found' });
-  res.json(project);
+  res.json(parseProject(project));
 });
 
+// Helper to parse mobileConfig and expand for frontend
+function parseProject(project: any) {
+  const parsed = { ...project };
+  if (parsed.mobileConfig) {
+    try {
+      const config = JSON.parse(parsed.mobileConfig);
+      Object.assign(parsed, config);
+    } catch {}
+    delete parsed.mobileConfig;
+  }
+  return parsed;
+}
+
 app.post('/api/projects', (req, res) => {
-  const { name, type, baseUrl, appPackage, appActivity, deviceName, platformVersion, automationName } = req.body;
+  const { name, type, baseUrl, mobileConfig, appPackage, appActivity, deviceName, platformVersion, automationName, appiumPath, appiumHost, appiumPort } = req.body;
 
   if (!name || !type) {
     return res.status(400).json({ error: 'name and type are required' });
@@ -132,13 +149,45 @@ app.post('/api/projects', (req, res) => {
   }
 
   const id = generateId();
-  const stmt = db.prepare(`
-    INSERT INTO projects (id, name, type, baseUrl, appPackage, appActivity, deviceName, platformVersion, automationName)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
+
+  // Build mobileConfig from legacy fields or provided mobileConfig
+  let config = null;
+  if (type === 'mobile') {
+    if (mobileConfig) {
+      config = JSON.stringify(mobileConfig);
+    } else {
+      // Legacy support - build from individual fields
+      config = JSON.stringify({
+        appPackage,
+        appActivity,
+        deviceName,
+        platformVersion,
+        automationName,
+        appiumPath: appiumPath || '/',
+        appiumHost: appiumHost || 'localhost',
+        appiumPort: appiumPort || '4723'
+      });
+    }
+  }
+
+  // Check if table has new schema (mobileConfig column)
+  const tableInfo = db.prepare("PRAGMA table_info(projects)").all();
+  const hasMobileConfig = tableInfo.some((col: any) => col.name === 'mobileConfig');
+
+  let stmt;
+  if (hasMobileConfig) {
+    stmt = db.prepare('INSERT INTO projects (id, name, type, baseUrl, mobileConfig) VALUES (?, ?, ?, ?, ?)');
+    stmt.run(id, name, type, baseUrl || null, config);
+  } else {
+    // Legacy schema
+    const parsed = config ? JSON.parse(config) : {};
+    stmt = db.prepare(`INSERT INTO projects (id, name, type, baseUrl, appPackage, appActivity, deviceName, platformVersion, automationName)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    stmt.run(id, name, type, baseUrl || null, parsed.appPackage || null, parsed.appActivity || null,
+      parsed.deviceName || null, parsed.platformVersion || null, parsed.automationName || null);
+  }
 
   try {
-    stmt.run(id, name, type, baseUrl || null, appPackage || null, appActivity || null, deviceName || null, platformVersion || null, automationName || null);
     const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
     res.status(201).json(project);
   } catch (err: any) {
@@ -147,17 +196,37 @@ app.post('/api/projects', (req, res) => {
 });
 
 app.put('/api/projects/:id', (req, res) => {
-  const { name, type, baseUrl, appPackage, appActivity, deviceName, platformVersion, automationName } = req.body;
-  const stmt = db.prepare(`
-    UPDATE projects
-    SET name = ?, type = ?, baseUrl = ?, appPackage = ?, appActivity = ?,
-        deviceName = ?, platformVersion = ?, automationName = ?, updatedAt = datetime('now')
-    WHERE id = ?
-  `);
+  const { name, type, baseUrl, mobileConfig, appPackage, appActivity, deviceName, platformVersion, automationName, appiumPath, appiumHost, appiumPort } = req.body;
+
+  const tableInfo = db.prepare("PRAGMA table_info(projects)").all();
+  const hasMobileConfig = tableInfo.some((col: any) => col.name === 'mobileConfig');
 
   try {
-    const result = stmt.run(name, type, baseUrl || null, appPackage || null, appActivity || null, deviceName || null, platformVersion || null, automationName || null, req.params.id);
-    if (result.changes === 0) return res.status(404).json({ error: 'Project not found' });
+    if (hasMobileConfig) {
+      let config = null;
+      if (type === 'mobile') {
+        if (mobileConfig) {
+          config = JSON.stringify(mobileConfig);
+        } else if (appPackage || deviceName) {
+          config = JSON.stringify({
+            appPackage, appActivity, deviceName, platformVersion, automationName,
+            appiumPath: appiumPath || '/', appiumHost: appiumHost || 'localhost', appiumPort: appiumPort || '4723'
+          });
+        }
+      }
+      const stmt = db.prepare('UPDATE projects SET name = ?, type = ?, baseUrl = ?, mobileConfig = ?, updatedAt = datetime("now") WHERE id = ?');
+      const result = stmt.run(name, type, baseUrl || null, config, req.params.id);
+      if (result.changes === 0) return res.status(404).json({ error: 'Project not found' });
+    } else {
+      // Legacy schema
+      const stmt = db.prepare(`UPDATE projects
+        SET name = ?, type = ?, baseUrl = ?, appPackage = ?, appActivity = ?,
+            deviceName = ?, platformVersion = ?, automationName = ?, updatedAt = datetime('now')
+        WHERE id = ?`);
+      const result = stmt.run(name, type, baseUrl || null, appPackage || null, appActivity || null,
+        deviceName || null, platformVersion || null, automationName || null, req.params.id);
+      if (result.changes === 0) return res.status(404).json({ error: 'Project not found' });
+    }
     const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id);
     res.json(project);
   } catch (err: any) {

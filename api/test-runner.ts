@@ -181,13 +181,34 @@ async function runWdioFeature(feature: any, project: any, resultsDir: string, re
   // Import mobile connection
   const { initAppium } = await import('../src/mobileConnect.ts')
 
-  // Set Appium environment
-  process.env.APPIUM_HOST = process.env.APPIUM_HOST || 'localhost'
-  process.env.APPIUM_PORT = process.env.APPIUM_PORT || '4723'
-  process.env.APPIUM_DEVICE_NAME = project.deviceName || 'emulator-5554'
-  process.env.APPIUM_APP_PACKAGE = project.appPackage || ''
-  process.env.APPIUM_APP_ACTIVITY = project.appActivity || ''
-  process.env.APPIUM_AUTOMATION_NAME = project.automationName || 'UiAutomator2'
+  // Parse mobileConfig from project (supports both mobileConfig JSON and legacy fields)
+  let mobileConfig = {}
+  if (project.mobileConfig) {
+    try {
+      mobileConfig = JSON.parse(project.mobileConfig)
+    } catch {}
+  } else {
+    // Legacy support - use individual fields
+    mobileConfig = {
+      appPackage: project.appPackage,
+      appActivity: project.appActivity,
+      deviceName: project.deviceName,
+      platformVersion: project.platformVersion,
+      automationName: project.automationName,
+      appiumPath: project.appiumPath,
+      appiumHost: project.appiumHost,
+      appiumPort: project.appiumPort
+    }
+  }
+
+  // Set Appium environment from database config
+  process.env.APPIUM_PATH = mobileConfig.appiumPath || '/'
+  process.env.APPIUM_HOST = mobileConfig.appiumHost || 'localhost'
+  process.env.APPIUM_PORT = mobileConfig.appiumPort || '4723'
+  process.env.APPIUM_DEVICE_NAME = mobileConfig.deviceName || 'emulator-5554'
+  process.env.APPIUM_APP_PACKAGE = mobileConfig.appPackage || ''
+  process.env.APPIUM_APP_ACTIVITY = mobileConfig.appActivity || ''
+  process.env.APPIUM_AUTOMATION_NAME = mobileConfig.automationName || 'UiAutomator2'
 
   // Generate feature file from DB content
   const featuresDir = path.join(process.cwd(), 'features', 'mobile')
