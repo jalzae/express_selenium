@@ -440,13 +440,13 @@ Example: I want to test the login functionality. User should be able to login wi
                 </div>
               </div>
               <div class="form-group">
-                <label class="form-label">
+                <div class="form-label toggle-label">
                   <label class="toggle-switch">
                     <input type="checkbox" v-model="featureForm.enabled" />
                     <span class="toggle-slider"></span>
                   </label>
                   <span>Enabled for testing</span>
-                </label>
+                </div>
               </div>
             </div>
             <div class="modal-footer">
@@ -709,13 +709,9 @@ function syncFromCodeToVisual() {
 
   // Parse description (lines between Feature and first Scenario)
   const lines = content.split('\n')
-  let descLines = []
-  let scenarioStarted = false
+  const descLines: string[] = []
   for (const line of lines.slice(1)) {
-    if (line.match(/^\s*Scenario(?:\s+Outline)?:/i)) {
-      scenarioStarted = true
-      break
-    }
+    if (line.match(/^\s*Scenario(?:\s+Outline)?:/i)) break
     if (line.trim() && !line.match(/^As a|I want|So that/)) {
       descLines.push(line.trim())
     }
@@ -820,15 +816,18 @@ function syncFromVisualToCode() {
 }
 
 function findMatchingStepDef(stepText: string): StepDefinition | null {
+  // Normalise: strip surrounding quotes from the full step text for matching
   for (const stepDef of stepDefinitions.value) {
     let pattern = stepDef.gherkinPattern
+    // Escape regex specials (but not our {param} placeholders)
     pattern = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-    pattern = pattern.replace(/\\{([^}]+)\\}/g, '(.+?)')
+    // Replace \{param\} with a group that matches: "value", 'value', <value>, or bare word(s)
+    pattern = pattern.replace(/\\{([^}]+)\\}/g, '(?:"([^"]*)"|\u0027([^\u0027]*)\u0027|<([^>]*)>|([\\S]+(?:\\s+[\\S]+)*))')
     try {
       if (new RegExp(`^${pattern}$`, 'i').test(stepText)) {
         return stepDef
       }
-    } catch {}
+    } catch { /* invalid regex, skip */ }
   }
   return null
 }
@@ -1076,9 +1075,15 @@ const featureForm = reactive({
   enabled: true
 })
 
-function openFeatureModal() {
+async function openFeatureModal() {
   editingFeature.value = null
   resetFeatureForm()
+  // Auto-seed step library if empty
+  if (stepDefinitions.value.length === 0) {
+    try {
+      await stepStore.importFromLibrary(projectId, 'playwright')
+    } catch { /* silently ignore if already imported */ }
+  }
   showFeatureModal.value = true
 }
 
@@ -1089,7 +1094,7 @@ function closeFeatureModal() {
   resetFeatureForm()
 }
 
-function editFeature(feature: Feature) {
+async function editFeature(feature: Feature) {
   editingFeature.value = feature
   Object.assign(featureForm, {
     name: feature.name,
@@ -1098,6 +1103,12 @@ function editFeature(feature: Feature) {
     content: feature.content,
     enabled: !!feature.enabled
   })
+  // Auto-seed step library if empty
+  if (stepDefinitions.value.length === 0) {
+    try {
+      await stepStore.importFromLibrary(projectId, 'playwright')
+    } catch { /* silently ignore if already imported */ }
+  }
   showFeatureModal.value = true
 }
 
@@ -1861,6 +1872,15 @@ watch(enabledFeatures, (newFeatures) => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  width: 100%;
+}
+
+.modal form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .modal-small {
@@ -1900,6 +1920,8 @@ watch(enabledFeatures, (newFeatures) => {
 .modal-body {
   padding: 1.5rem;
   overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .modal-footer {
@@ -2140,15 +2162,7 @@ watch(enabledFeatures, (newFeatures) => {
   color: var(--text-secondary);
 }
 
-.step-select {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  background: var(--bg-primary);
-  font-size: 0.75rem;
-  margin-bottom: 0.5rem;
-}
+/* .step-select is defined in the Steps List section below */
 
 .step-params {
   margin: 0.5rem 0;
@@ -2447,11 +2461,13 @@ watch(enabledFeatures, (newFeatures) => {
 .step-select {
   flex: 1;
   min-width: 200px;
+  width: 100%;
   padding: 0.4rem 0.5rem;
   border: 1px solid var(--border);
-  border-radius: 0.25rem;
+  border-radius: 0.375rem;
   background: var(--bg-primary);
   font-size: 0.8rem;
+  margin-bottom: 0.5rem;
 }
 
 .step-params-inline {
@@ -2651,15 +2667,15 @@ watch(enabledFeatures, (newFeatures) => {
   color: var(--error);
 }
 
-/* Param row in step builder */
-.param-row {
+/* Step builder param rows use column layout */
+.step-builder .param-row {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   margin-bottom: 0.5rem;
 }
 
-.param-row label {
+.step-builder .param-row label {
   font-size: 0.75rem;
   color: var(--text-secondary);
 }
