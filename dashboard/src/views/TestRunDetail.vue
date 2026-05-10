@@ -64,8 +64,47 @@
 
       <!-- Results -->
       <div v-if="run.status !== 'pending' && run.status !== 'running'" class="results-section">
-        <h3>Results</h3>
-        <div v-if="run.resultJson" class="results-json">
+        <h3>Test Results</h3>
+        
+        <div v-if="parsedResults?.cucumberResults?.length" class="cucumber-report">
+          <div v-for="feature in parsedResults.cucumberResults" :key="feature.id" class="feature-card">
+            <div class="feature-header">
+              <span class="feature-keyword">{{ feature.keyword }}:</span> {{ feature.name }}
+            </div>
+            
+            <div class="scenarios">
+              <div v-for="scenario in feature.elements" :key="scenario.id" class="scenario-block">
+                <div class="scenario-header">
+                  <span class="scenario-keyword">{{ scenario.keyword }}:</span> {{ scenario.name }}
+                </div>
+                
+                <div class="steps">
+                  <div v-for="(step, idx) in scenario.steps" :key="idx" v-show="!step.hidden" class="step-row">
+                    <div class="step-content">
+                      <span class="step-status" :class="`status-${step.result?.status}`" :title="step.result?.status">
+                        <span v-if="step.result?.status === 'passed'">✅</span>
+                        <span v-else-if="step.result?.status === 'failed'">❌</span>
+                        <span v-else-if="step.result?.status === 'undefined'">⚠️</span>
+                        <span v-else-if="step.result?.status === 'skipped'">⏭️</span>
+                        <span v-else>❓</span>
+                      </span>
+                      <span class="step-keyword">{{ step.keyword }}</span>
+                      <span class="step-name">{{ step.name }}</span>
+                      <span v-if="step.result?.duration" class="step-duration">
+                        ({{ Math.round(step.result.duration / 1000000) }}ms)
+                      </span>
+                    </div>
+                    <div v-if="step.result?.error_message" class="step-error">
+                      <pre>{{ step.result.error_message }}</pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="run.resultJson" class="results-json">
           <pre>{{ formatResults(run.resultJson) }}</pre>
         </div>
       </div>
@@ -136,6 +175,15 @@ const recordings = computed(() => {
     return JSON.parse(run.value.recordingPath)
   } catch {
     return []
+  }
+})
+
+const parsedResults = computed(() => {
+  if (!run.value?.resultJson) return null
+  try {
+    return JSON.parse(run.value.resultJson)
+  } catch {
+    return null
   }
 })
 
@@ -329,6 +377,117 @@ onUnmounted(() => {
   padding: 0.5rem 0.75rem;
   background: var(--bg-tertiary);
   border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+/* Cucumber Report Styles */
+.cucumber-report {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.feature-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.feature-header {
+  padding: 1rem 1.5rem;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.feature-keyword {
+  color: var(--accent);
+}
+
+.scenarios {
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.scenario-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.scenario-header {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.scenario-keyword {
+  color: var(--text-secondary);
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-left: 1.5rem;
+}
+
+.step-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--bg-primary);
+}
+
+.step-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.step-status {
+  min-width: 24px;
+  text-align: center;
+}
+
+.step-keyword {
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.step-name {
+  color: var(--text-primary);
+}
+
+.step-duration {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.status-passed { color: #10b981; }
+.status-failed { color: #ef4444; }
+.status-undefined { color: #f59e0b; }
+.status-skipped { color: #6b7280; }
+
+.step-error {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-left: 3px solid #ef4444;
+  border-radius: 0.25rem;
+  overflow-x: auto;
+}
+
+.step-error pre {
+  margin: 0;
+  color: #ef4444;
   font-size: 0.875rem;
 }
 </style>
