@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 17751584
+              "duration": 667832
             }
           },
           {
@@ -92,18 +92,8 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 3006711792
-            },
-            "embeddings": [
-              {
-                "data": "UmVjb3JkaW5nOiBkYXNoYm9hcmQvcHVibGljL3JlY29yZGluZ3MvMTc3ODQyOTYwNTAyOF93YzVwNDd3cmlfU3VjY2Vzc2Z1bF9sb2dpbl93aXRoX3ZhbGlkX2NyZWRlbnRpYWxzLTE3Nzg0Mjk2MDc4NTMubXA0",
-                "mime_type": "text/plain"
-              },
-              {
-                "data": "PGEgaHJlZj0iZGFzaGJvYXJkL3B1YmxpYy9yZWNvcmRpbmdzLzE3Nzg0Mjk2MDUwMjhfd2M1cDQ3d3JpX1N1Y2Nlc3NmdWxfbG9naW5fd2l0aF92YWxpZF9jcmVkZW50aWFscy0xNzc4NDI5NjA3ODUzLm1wNCI+RG93bmxvYWQgcmVjb3JkaW5nPC9hPg==",
-                "mime_type": "text/html"
-              }
-            ]
+              "duration": 226290
+            }
           }
         ],
         "tags": [],
@@ -121,7 +111,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 8034541
+              "duration": 55165
             }
           },
           {
@@ -199,18 +189,8 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 3003095000
-            },
-            "embeddings": [
-              {
-                "data": "UmVjb3JkaW5nOiBkYXNoYm9hcmQvcHVibGljL3JlY29yZGluZ3MvMTc3ODQyOTYwNTAyOF93YzVwNDd3cmlfRmFpbGVkX2xvZ2luX3dpdGhfaW52YWxpZF9jcmVkZW50aWFscy0xNzc4NDI5NjEwODgwLm1wNA==",
-                "mime_type": "text/plain"
-              },
-              {
-                "data": "PGEgaHJlZj0iZGFzaGJvYXJkL3B1YmxpYy9yZWNvcmRpbmdzLzE3Nzg0Mjk2MDUwMjhfd2M1cDQ3d3JpX0ZhaWxlZF9sb2dpbl93aXRoX2ludmFsaWRfY3JlZGVudGlhbHMtMTc3ODQyOTYxMDg4MC5tcDQiPkRvd25sb2FkIHJlY29yZGluZzwvYT4=",
-                "mime_type": "text/html"
-              }
-            ]
+              "duration": 96917
+            }
           }
         ],
         "tags": [],
@@ -228,7 +208,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 5647208
+              "duration": 51625
             }
           },
           {
@@ -296,18 +276,8 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 3001980999
-            },
-            "embeddings": [
-              {
-                "data": "UmVjb3JkaW5nOiBkYXNoYm9hcmQvcHVibGljL3JlY29yZGluZ3MvMTc3ODQyOTYwNTAyOF93YzVwNDd3cmlfUmVzZXRfcGFzc3dvcmRfZnJvbV9sb2dpbl9wYWdlLTE3Nzg0Mjk2MTM4OTMubXA0",
-                "mime_type": "text/plain"
-              },
-              {
-                "data": "PGEgaHJlZj0iZGFzaGJvYXJkL3B1YmxpYy9yZWNvcmRpbmdzLzE3Nzg0Mjk2MDUwMjhfd2M1cDQ3d3JpX1Jlc2V0X3Bhc3N3b3JkX2Zyb21fbG9naW5fcGFnZS0xNzc4NDI5NjEzODkzLm1wNCI+RG93bmxvYWQgcmVjb3JkaW5nPC9hPg==",
-                "mime_type": "text/html"
-              }
-            ]
+              "duration": 46000
+            }
           }
         ],
         "tags": [],
@@ -325,7 +295,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 10531374
+              "duration": 46375
             }
           },
           {
@@ -393,18 +363,8 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 3003488124
-            },
-            "embeddings": [
-              {
-                "data": "UmVjb3JkaW5nOiBkYXNoYm9hcmQvcHVibGljL3JlY29yZGluZ3MvMTc3ODQyOTYwNTAyOF93YzVwNDd3cmlfTG9naW5fd2l0aF9lbXB0eV9maWVsZHMtMTc3ODQyOTYxNjkwMi5tcDQ=",
-                "mime_type": "text/plain"
-              },
-              {
-                "data": "PGEgaHJlZj0iZGFzaGJvYXJkL3B1YmxpYy9yZWNvcmRpbmdzLzE3Nzg0Mjk2MDUwMjhfd2M1cDQ3d3JpX0xvZ2luX3dpdGhfZW1wdHlfZmllbGRzLTE3Nzg0Mjk2MTY5MDIubXA0Ij5Eb3dubG9hZCByZWNvcmRpbmc8L2E+",
-                "mime_type": "text/html"
-              }
-            ]
+              "duration": 37291
+            }
           }
         ],
         "tags": [],
@@ -422,7 +382,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 8021375
+              "duration": 275750
             }
           },
           {
@@ -470,18 +430,8 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 3005489708
-            },
-            "embeddings": [
-              {
-                "data": "UmVjb3JkaW5nOiBkYXNoYm9hcmQvcHVibGljL3JlY29yZGluZ3MvMTc3ODQyOTYwNTAyOF93YzVwNDd3cmlfTmF2aWdhdGVfdG9fYWNjb3VudF9yZWdpc3RyYXRpb24tMTc3ODQyOTYxOTkxOC5tcDQ=",
-                "mime_type": "text/plain"
-              },
-              {
-                "data": "PGEgaHJlZj0iZGFzaGJvYXJkL3B1YmxpYy9yZWNvcmRpbmdzLzE3Nzg0Mjk2MDUwMjhfd2M1cDQ3d3JpX05hdmlnYXRlX3RvX2FjY291bnRfcmVnaXN0cmF0aW9uLTE3Nzg0Mjk2MTk5MTgubXA0Ij5Eb3dubG9hZCByZWNvcmRpbmc8L2E+",
-                "mime_type": "text/html"
-              }
-            ]
+              "duration": 78040
+            }
           }
         ],
         "tags": [],
@@ -493,6 +443,6 @@
     "keyword": "Feature",
     "name": "User Login on Sauce Demo Shopify",
     "tags": [],
-    "uri": "test-results/1778429605028-wc5p47wri/features/1778423663471-bdq5islb4.feature"
+    "uri": "test-results/1778429732908-ei89fm5sp/features/1778423663471-bdq5islb4.feature"
   }
 ]

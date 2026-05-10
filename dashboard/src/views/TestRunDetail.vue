@@ -74,9 +74,9 @@
       <div v-if="run.recordingPath || run.screenshotPaths" class="artifacts-section">
         <h3>Artifacts</h3>
         <div class="artifacts-grid">
-          <a v-if="run.recordingPath" :href="`/recordings/${run.recordingPath}`" target="_blank" class="artifact-card">
+          <a v-for="rec in recordings" :key="rec" :href="`/recordings/${rec}`" target="_blank" class="artifact-card">
             <div class="artifact-icon">🎥</div>
-            <div>Recording</div>
+            <div>{{ rec.length > 20 ? rec.substring(0, 20) + '...' : rec }}</div>
           </a>
           <a v-for="shot in screenshots" :key="shot" :href="`/screenshots/${shot}`" target="_blank" class="artifact-card">
             <div class="artifact-icon">📸</div>
@@ -125,6 +125,15 @@ const screenshots = computed(() => {
   if (!run.value?.screenshotPaths) return []
   try {
     return JSON.parse(run.value.screenshotPaths)
+  } catch {
+    return []
+  }
+})
+
+const recordings = computed(() => {
+  if (!run.value?.recordingPath) return []
+  try {
+    return JSON.parse(run.value.recordingPath)
   } catch {
     return []
   }

@@ -144,7 +144,7 @@ cucumber.on('close', async (code) => {
       const files = fs.readdirSync(screenshotsDir);
       for (const file of files) {
         if (file.includes(TEST_RUN_ID)) {
-          screenshots.push(path.join(screenshotsDir, file));
+          screenshots.push(file);
         }
       }
     }
@@ -158,7 +158,7 @@ cucumber.on('close', async (code) => {
       const files = fs.readdirSync(recordingsDir);
       for (const file of files) {
         if (file.includes(TEST_RUN_ID) || file.includes(featureIds[0])) {
-          recordings.push(path.join(recordingsDir, file));
+          recordings.push(file);
         }
       }
     }
