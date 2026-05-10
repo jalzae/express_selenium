@@ -792,6 +792,42 @@ Return ONLY the Gherkin feature content, no explanations.`;
 });
 
 // ============================================================================
+// APPIUM SERVER STATUS
+// ============================================================================
+app.post('/api/appium/status', async (req, res) => {
+  try {
+    const { host = 'localhost', port = 4723 } = req.body;
+
+    // Try to connect to Appium server
+    const response = await fetch(`http://${host}:${port}/status`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      signal: AbortSignal.timeout(5000) // 5 second timeout
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      res.json({
+        connected: true,
+        value: data.value
+      });
+    } else {
+      res.json({
+        connected: false,
+        error: `Appium server returned status ${response.status}`
+      });
+    }
+  } catch (err: any) {
+    res.json({
+      connected: false,
+      error: err.message || 'Failed to connect to Appium server'
+    });
+  }
+});
+
+// ============================================================================
 // SERVE FRONTEND
 // ============================================================================
 app.use(express.static(path.join(__dirname, '../dashboard/dist')));

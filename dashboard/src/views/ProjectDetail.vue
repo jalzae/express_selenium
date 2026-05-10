@@ -13,6 +13,35 @@
       <button class="btn-primary" @click="openFeatureModal()">+ Add Feature</button>
     </div>
 
+    <!-- Appium Server Status (for mobile projects) -->
+    <div v-if="project?.type === 'mobile'" class="appium-status-section">
+      <div class="section-header">
+        <h3>Appium Server Status</h3>
+        <div class="status-badge" :class="{ 'status-connected': appiumStatus.connected, 'status-disconnected': !appiumStatus.connected }">
+          {{ appiumStatus.connected ? '✓ Connected' : '⚠️ Not Connected' }}
+        </div>
+      </div>
+      <div class="appium-config">
+        <div class="config-row">
+          <span class="config-label">Server:</span>
+          <span class="config-value">{{ project?.automationName || 'uiAutomator2' }} @ {{ project?.deviceName || 'Unknown Device' }}</span>
+        </div>
+        <div class="config-row">
+          <span class="config-label">Endpoint:</span>
+          <span class="config-value">http://{{ appiumConfig.host }}:{{ appiumConfig.port }}</span>
+        </div>
+      </div>
+      <div v-if="!appiumStatus.connected" class="appium-warning">
+        <p>⚠️ Appium server must be running before executing mobile tests.</p>
+        <button class="btn-sm btn-primary" @click="checkAppiumServer" :disabled="appiumStatus.checking">
+          {{ appiumStatus.checking ? 'Checking...' : 'Check Connection' }}
+        </button>
+      </div>
+      <div v-else class="appium-success">
+        <p>✓ Appium server is running and ready for testing.</p>
+      </div>
+    </div>
+
     <!-- Features List -->
     <div class="features-section">
       <div class="section-header">
@@ -470,6 +499,42 @@ const takeScreenshots = ref(true)
 const aiGenerating = ref(false)
 const aiDescription = ref('')
 const dragIdx = ref<number | null>(null)
+
+// Appium Server Status (for mobile projects)
+const appiumStatus = reactive({
+  connected: false,
+  checking: false,
+  lastChecked: null as Date | null
+})
+
+const appiumConfig = reactive({
+  host: 'localhost',
+  port: 4723
+})
+
+async function checkAppiumServer() {
+  if (!project.value || project.value.type !== 'mobile') return
+
+  appiumStatus.checking = true
+  try {
+    const response = await fetch('/api/appium/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        host: project.value.deviceName ? 'localhost' : appiumConfig.host,
+        port: appiumConfig.port
+      })
+    })
+    const data = await response.json()
+    appiumStatus.connected = data.connected || false
+    appiumStatus.lastChecked = new Date()
+  } catch (e) {
+    appiumStatus.connected = false
+    console.error('Failed to check Appium server:', e)
+  } finally {
+    appiumStatus.checking = false
+  }
+}
 
 // Step Builder
 const selectedStepCategory = ref('')
@@ -1308,7 +1373,8 @@ watch(enabledFeatures, (newFeatures) => {
 }
 
 .features-section,
-.run-section {
+.run-section,
+.appium-status-section {
   margin-bottom: 2.5rem;
 }
 
@@ -2467,5 +2533,85 @@ watch(enabledFeatures, (newFeatures) => {
 .step-builder .param-row label {
   font-size: 0.75rem;
   color: var(--text-secondary);
+}
+
+/* Appium Server Status */
+.appium-status-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.status-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-connected {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.status-disconnected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.appium-config {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border-radius: 0.5rem;
+}
+
+.config-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.config-label {
+  font-weight: 500;
+  color: var(--text-secondary);
+  min-width: 80px;
+}
+
+.config-value {
+  font-family: monospace;
+  color: var(--text-primary);
+}
+
+.appium-warning {
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.appium-warning p {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.appium-success {
+  padding: 1rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 0.5rem;
+}
+
+.appium-success p {
+  margin: 0;
+  color: #10b981;
 }
 </style>
