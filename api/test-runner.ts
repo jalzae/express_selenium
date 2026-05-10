@@ -96,14 +96,14 @@ if (project.type === 'mobile') {
 // Cucumber arguments
 const cucumberArgs = [
   'cucumber-js',
-  `--require-module ts-node/register`,
-  `--require-module tsconfig-paths/register`,
-  `--require src/steps.ts`,
-  `--require src/hooks.ts`,
+  '--require', 'ts-node/register',
+  '--require', 'tsconfig-paths/register',
+  '--require', 'src/steps.ts',
+  '--require', 'src/hooks.ts',
   `${featuresDir}/**/*.feature`,
-  `--format json:${path.join(resultsDir, 'cucumber-report.json')}`,
-  `--format message:${path.join(resultsDir, 'cucumber-messages.ndjson')}`,
-  `--format progress`,
+  '--format', `json:${path.join(resultsDir, 'cucumber-report.json')}`,
+  '--format', `message:${path.join(resultsDir, 'cucumber-messages.ndjson')}`,
+  '--format', 'progress',
 ];
 
 console.log('[TestRunner] Running Cucumber with args:', cucumberArgs.join(' '));

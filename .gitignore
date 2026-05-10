@@ -17,3 +17,4 @@ dashboard/dist
 dashboard/node_modules
 e2e-dashboard.db-shm
 e2e-dashboard.db-wal
+public/

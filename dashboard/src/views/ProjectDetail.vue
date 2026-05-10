@@ -172,26 +172,26 @@
             <div class="modal-body">
               <div class="form-row">
                 <div class="form-group">
-                  <label class="form-label">Feature Name *</label>
-                  <input v-model="featureForm.name" required placeholder="e.g., User Login" />
+                  <label class="form-label" for="feature-name">Feature Name *</label>
+                  <input id="feature-name" v-model="featureForm.name" required placeholder="e.g., User Login" />
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Framework *</label>
-                  <select v-model="featureForm.framework" required>
+                  <label class="form-label" for="feature-framework">Framework *</label>
+                  <select id="feature-framework" v-model="featureForm.framework" required>
                     <option value="playwright">🌐 Playwright (Web)</option>
                     <option value="wdio">📱 WDIO/Appium (Mobile)</option>
                   </select>
                 </div>
               </div>
               <div class="form-group">
-                <label class="form-label">Description</label>
-                <input v-model="featureForm.description" placeholder="Brief description of what this feature tests..." />
+                <label class="form-label" for="feature-description">Description</label>
+                <input id="feature-description" v-model="featureForm.description" placeholder="Brief description of what this feature tests..." />
               </div>
 
               <!-- AI Generator -->
               <div class="ai-generator">
                 <div class="ai-header">
-                  <label class="form-label">
+                  <label class="form-label" for="ai-description">
                     <span>✨</span> AI Generate Gherkin
                   </label>
                   <button type="button" class="btn-sm btn-primary" @click="generateWithAI" :disabled="aiGenerating || !aiDescription.trim()">
@@ -199,6 +199,7 @@
                   </button>
                 </div>
                 <textarea
+                  id="ai-description"
                   v-model="aiDescription"
                   rows="3"
                   placeholder="Describe your test in plain language...
@@ -211,108 +212,229 @@ Example: I want to test the login functionality. User should be able to login wi
                 <label class="form-label">
                   Gherkin Feature *
                   <span v-if="gherkinError" class="error-text">⚠️ {{ gherkinError }}</span>
-                  <span v-else-if="gherkinValid" class="success-text">✓ Valid ({{ stepMatchCount }}/{{ totalSteps }} steps match library)</span>
+                  <span v-else-if="gherkinValid" class="success-text">✓ Valid ({{ stepMatchCount }}/{{ totalSteps }} steps match)</span>
                 </label>
 
-                <!-- Step Builder Section -->
-                <div class="step-builder-section">
-                  <div class="step-builder-controls">
-                    <select v-model="selectedStepCategory" @change="filterSteps" class="step-select">
-                      <option value="">📂 All Categories</option>
-                      <option value="navigation">🧭 Navigation</option>
-                      <option value="input">⌨️ Input</option>
-                      <option value="click">👆 Click</option>
-                      <option value="assertion">✓ Assertion</option>
-                      <option value="wait">⏱️ Wait</option>
-                      <option value="form">📋 Form</option>
-                      <option value="scroll">📜 Scroll</option>
-                    </select>
-                    <select v-model="selectedStepDef" class="step-select">
-                      <option value="">📝 Select a step to insert...</option>
-                      <option v-for="step in filteredStepDefs" :key="step.id" :value="step.id">
-                        {{ stepStore.getCategoryIcon(step.category || '') }} {{ step.name }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <!-- Selected Step Preview & Parameters -->
-                  <div v-if="selectedStepDefData" class="selected-step-card">
-                    <div class="step-pattern-preview">
-                      <strong>Pattern:</strong>
-                      <code>{{ selectedStepDefData.gherkinPattern }}</code>
-                    </div>
-                    <div v-if="selectedStepDefData.description" class="step-desc">
-                      {{ selectedStepDefData.description }}
-                    </div>
-                    <div v-if="selectedStepDefData.parameters && selectedStepDefData.parameters.length > 0" class="step-params-grid">
-                      <div v-for="param in selectedStepDefData.parameters" :key="param.name" class="param-field">
-                        <label>{{ param.name }}</label>
-                        <input
-                          :placeholder="param.default || `Enter ${param.name}`"
-                          v-model="paramValues[param.name]"
-                          @input="updateStepPreview"
-                          class="param-input" />
-                      </div>
-                    </div>
-                    <div class="step-preview-result">
-                      <strong>Will insert:</strong>
-                      <code class="preview-code">{{ stepPreviewText }}</code>
-                    </div>
-                    <button type="button" class="btn-primary" @click="insertStep">
-                      + Insert Step
-                    </button>
-                  </div>
+                <!-- Toggle between editors -->
+                <div class="editor-toggle">
+                  <button type="button" :class="['tab-btn', { active: editorMode === 'visual' }]" @click="editorMode = 'visual'">
+                    📝 Visual Editor
+                  </button>
+                  <button type="button" :class="['tab-btn', { active: editorMode === 'code' }]" @click="editorMode = 'code'">
+                    💻 Code Editor
+                  </button>
                 </div>
 
-                <div class="gherkin-editor">
-                  <textarea v-model="featureForm.content" @input="validateGherkin" rows="16" required
+                <!-- Visual Editor: Line-by-line step editor -->
+                <div v-if="editorMode === 'visual'" class="visual-editor">
+                  <!-- Feature header -->
+                  <div class="feature-header-edit">
+                    <label for="visual-feature-name">Feature Name:</label>
+                    <input id="visual-feature-name" v-model="featureName" class="feature-name-input" placeholder="e.g., User Login" />
+                  </div>
+                  <div class="feature-header-edit">
+                    <label for="visual-feature-desc">Description:</label>
+                    <textarea id="visual-feature-desc" v-model="featureDescription" rows="2" class="feature-desc-input" placeholder="As a user, I want to..."></textarea>
+                  </div>
+
+                  <!-- Scenarios -->
+                  <div v-for="(scenario, sIdx) in scenarios" :key="sIdx" class="scenario-block">
+                    <div class="scenario-header">
+                      <div class="scenario-type-toggle">
+                        <label class="checkbox-label-inline">
+                          <input type="checkbox" v-model="scenario.isOutline" @change="toggleScenarioOutline(sIdx)" />
+                          <span>Scenario Outline</span>
+                        </label>
+                      </div>
+                      <input v-model="scenario.name" placeholder="Scenario name" class="scenario-name-input" />
+                      <button type="button" class="btn-icon btn-error" @click="removeScenario(sIdx)" title="Delete scenario">🗑️</button>
+                    </div>
+
+                    <!-- Steps -->
+                    <div class="steps-list">
+                      <div v-for="(step, stepIdx) in scenario.steps" :key="stepIdx" class="step-row">
+                        <select v-model="step.keyword" class="keyword-select">
+                          <option value="Given">Given</option>
+                          <option value="When">When</option>
+                          <option value="Then">Then</option>
+                          <option value="And">And</option>
+                          <option value="But">But</option>
+                        </select>
+
+                        <select v-model="step.stepDefId" @change="onStepDefChange(step, sIdx, stepIdx)" class="step-select">
+                          <option value="">Select step...</option>
+                          <optgroup v-for="cat in stepCategories" :key="cat.name" :label="cat.label">
+                            <option v-for="s in cat.steps" :key="s.id" :value="s.id">
+                              {{ s.name }}
+                            </option>
+                          </optgroup>
+                        </select>
+
+                        <!-- Parameter inputs for selected step -->
+                        <div v-if="step.matchedDef" class="step-params-inline">
+                          <input v-for="param in step.matchedDef.parameters" :key="param.name"
+                            :placeholder="scenario.isOutline ? `<${param.name}>` : param.name"
+                            v-model="step.paramValues[param.name]"
+                            @input="updateStepText(step)"
+                            class="param-input-inline" />
+                        </div>
+
+                        <button type="button" class="btn-icon" @click="removeStep(sIdx, stepIdx)" title="Remove step">✕</button>
+                        <button type="button" class="btn-icon" @click="moveStep(sIdx, stepIdx, -1)" title="Move up">↑</button>
+                        <button type="button" class="btn-icon" @click="moveStep(sIdx, stepIdx, 1)" title="Move down">↓</button>
+
+                        <!-- Validation status -->
+                        <span v-if="step.matchedDef" class="step-status valid">✓</span>
+                        <span v-else class="step-status invalid">⚠️</span>
+                      </div>
+
+                      <button type="button" class="btn-sm btn-secondary add-step-btn" @click="addStep(sIdx)">
+                        + Add Step
+                      </button>
+                    </div>
+
+                    <!-- Examples Table for Scenario Outline -->
+                    <div v-if="scenario.isOutline" class="examples-section">
+                      <div class="examples-header">
+                        <h4>Examples</h4>
+                        <div class="examples-actions">
+                          <input
+                            v-if="scenario.examples.length > 0"
+                            v-model="newColumnName[sIdx]"
+                            placeholder="New column name"
+                            class="column-name-input"
+                            @keyup.enter="addExampleColumn(sIdx, newColumnName[sIdx]); newColumnName[sIdx] = ''"
+                          />
+                          <button
+                            type="button"
+                            class="btn-sm btn-secondary"
+                            @click="addExampleColumn(sIdx, newColumnName[sIdx]); newColumnName[sIdx] = ''"
+                            :disabled="!newColumnName[sIdx]?.trim()"
+                          >
+                            + Column
+                          </button>
+                          <button type="button" class="btn-sm btn-primary" @click="addExampleRow(sIdx)">
+                            + Row
+                          </button>
+                        </div>
+                      </div>
+
+                      <div v-if="scenario.examples.length === 0" class="examples-empty">
+                        <p>No examples yet. Add columns based on your step parameters, then add test data rows.</p>
+                        <button type="button" class="btn-sm btn-secondary" @click="addExampleRow(sIdx)">
+                          Initialize Examples Table
+                        </button>
+                      </div>
+
+                      <div v-else class="examples-table-wrapper">
+                        <table class="examples-table">
+                          <thead>
+                            <tr>
+                              <th v-for="header in getExampleHeaders(scenario)" :key="header" class="examples-header-cell">
+                                <div class="header-cell-content">
+                                  <span>{{ header }}</span>
+                                  <button
+                                    type="button"
+                                    class="btn-icon-small"
+                                    @click="removeExampleColumn(sIdx, header)"
+                                    title="Remove column"
+                                  >✕</button>
+                                </div>
+                              </th>
+                              <th class="actions-header">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr v-for="(row, rowIdx) in scenario.examples" :key="rowIdx">
+                              <td v-for="header in getExampleHeaders(scenario)" :key="header" class="examples-cell">
+                                <input
+                                  v-model="row[header]"
+                                  @input="syncFromVisualToCode"
+                                  class="example-cell-input"
+                                  :placeholder="`Enter ${header}`"
+                                />
+                              </td>
+                              <td class="examples-cell-actions">
+                                <button
+                                  type="button"
+                                  class="btn-icon-small btn-error"
+                                  @click="removeExampleRow(sIdx, rowIdx)"
+                                  title="Remove row"
+                                >🗑️</button>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button type="button" class="btn-primary" @click="addScenario">+ Add Scenario</button>
+                </div>
+
+                <!-- Code Editor: Raw Gherkin textarea -->
+                <div v-else class="gherkin-editor">
+                  <textarea v-model="featureForm.content" @input="onCodeEditorChange" rows="16" required
                     placeholder="Feature: Login Functionality
 
   Scenario: Successful login
     Given I navigate to &quot;https://example.com/login&quot;
     When I enter &quot;user@example.com&quot; into input field having id &quot;email&quot;
-    And I enter &quot;password123&quot; into input field having id &quot;password&quot;
     And I click on element having css selector &quot;button[type='submit']&quot;
     Then the URL should contain &quot;/dashboard&quot;"></textarea>
                   <div class="gherkin-sidebar">
-                    <!-- Validation Errors -->
-                    <div v-if="invalidSteps.length > 0" class="validation-errors">
-                      <h4>⚠️ Invalid Steps ({{ invalidSteps.length }})</h4>
-                      <div v-for="(err, idx) in invalidSteps" :key="idx" class="error-item">
-                        {{ err }}
+                    <!-- Step Builder Quick Add -->
+                    <div class="step-builder">
+                      <h4>Quick Add Step</h4>
+                      <select v-model="selectedStepCategory" @change="filterSteps" class="step-select">
+                        <option value="">All Categories</option>
+                        <option value="navigation">🧭 Navigation</option>
+                        <option value="input">⌨️ Input</option>
+                        <option value="click">👆 Click</option>
+                        <option value="assertion">✓ Assertion</option>
+                        <option value="wait">⏱️ Wait</option>
+                        <option value="form">📋 Form</option>
+                        <option value="scroll">📜 Scroll</option>
+                      </select>
+                      <select v-model="selectedStepDef" class="step-select">
+                        <option value="">Select step...</option>
+                        <option v-for="step in filteredStepDefs" :key="step.id" :value="step.id">
+                          {{ stepStore.getCategoryIcon(step.category || '') }} {{ step.name }}
+                        </option>
+                      </select>
+
+                      <div v-if="selectedStepDefData" class="step-params">
+                        <div v-for="param in selectedStepDefData.parameters" :key="param.name" class="param-row">
+                          <label>{{ param.name }}</label>
+                          <input v-model="paramValues[param.name]" @input="updateStepPreview" class="param-input" />
+                        </div>
                       </div>
+
+                      <div class="step-preview-result">
+                        <code>{{ stepPreviewText }}</code>
+                      </div>
+
+                      <button type="button" class="btn-sm btn-primary" @click="insertStep">
+                        + Insert to Code
+                      </button>
                     </div>
 
-                    <!-- Valid Steps -->
+                    <!-- Validation Errors -->
+                    <div v-if="invalidSteps.length > 0" class="validation-errors">
+                      <h4>⚠️ Invalid Steps</h4>
+                      <div v-for="(err, idx) in invalidSteps" :key="idx" class="error-item">{{ err }}</div>
+                    </div>
                     <div v-else-if="validStepsList.length > 0" class="valid-steps">
                       <h4>✓ Valid Steps</h4>
-                      <div v-for="(step, idx) in validStepsList.slice(0, 5)" :key="idx" class="valid-item">
-                        {{ step }}
-                      </div>
-                      <div v-if="validStepsList.length > 5" class="more-count">
-                        +{{ validStepsList.length - 5 }} more
-                      </div>
+                      <div v-for="(step, idx) in validStepsList.slice(0, 5)" :key="idx" class="valid-item">{{ step }}</div>
                     </div>
 
                     <!-- Quick Reference -->
                     <div class="gherkin-help">
                       <h4>Quick Reference</h4>
-                      <div class="syntax-item">
-                        <code>Feature:</code>
-                        <span>Feature name</span>
-                      </div>
-                      <div class="syntax-item">
-                        <code>Scenario:</code>
-                        <span>Test scenario</span>
-                      </div>
-                      <div class="syntax-item">
-                        <code>Given/When/Then</code>
-                        <span>Step keywords</span>
-                      </div>
-                      <div class="syntax-item">
-                        <code>And/But</code>
-                        <span>Additional steps</span>
-                      </div>
+                      <div class="syntax-item"><code>Feature:</code><span>Feature name</span></div>
+                      <div class="syntax-item"><code>Scenario:</code><span>Test scenario</span></div>
+                      <div class="syntax-item"><code>Given/When/Then</code><span>Step keywords</span></div>
                     </div>
                   </div>
                 </div>
@@ -496,7 +618,7 @@ const stepForm = reactive({
   category: 'navigation' as StepDefinition['category'],
   gherkinPattern: '',
   playwrightFunction: '',
-  parameters: [] as Array<{ name: string; type: string; default?: string }>,
+  parameters: [] as Array<{ name: string; type: 'string' | 'number' | 'boolean'; default?: string }>,
   description: '',
   enabled: true
 })
@@ -520,6 +642,420 @@ const filteredStepDefs = computed(() => {
     steps = steps.filter(s => s.category === selectedStepCategory.value)
   }
   return steps
+})
+
+// Step categories for visual editor
+const stepCategories = computed(() => {
+  const cats = [
+    { name: 'navigation', label: '🧭 Navigation' },
+    { name: 'input', label: '⌨️ Input' },
+    { name: 'click', label: '👆 Click' },
+    { name: 'assertion', label: '✓ Assertion' },
+    { name: 'wait', label: '⏱️ Wait' },
+    { name: 'form', label: '📋 Form' },
+    { name: 'scroll', label: '📜 Scroll' },
+    { name: 'screenshot', label: '📸 Screenshot' },
+    { name: 'script', label: '🔧 Script' },
+    { name: 'attribute', label: '🏷️ Attribute' },
+  ]
+  return cats.map(cat => ({
+    ...cat,
+    steps: stepDefinitions.value.filter(s => s.category === cat.name)
+  })).filter(c => c.steps.length > 0)
+})
+
+// Visual Editor state
+const editorMode = ref<'visual' | 'code'>('visual')
+const featureName = ref('')
+const featureDescription = ref('')
+const newColumnName = ref<Record<number, string>>({})
+
+interface ScenarioStep {
+  keyword: 'Given' | 'When' | 'Then' | 'And' | 'But'
+  stepDefId: string
+  matchedDef: StepDefinition | null
+  paramValues: Record<string, string>
+  text: string
+}
+
+interface ExampleRow {
+  [key: string]: string
+}
+
+interface Scenario {
+  name: string
+  isOutline: boolean
+  steps: ScenarioStep[]
+  examples: ExampleRow[]
+}
+
+const scenarios = ref<Scenario[]>([
+  { name: 'Example scenario', isOutline: false, steps: [], examples: [] }
+])
+
+// Sync between visual and code editor
+function syncFromCodeToVisual() {
+  const content = featureForm.content.trim()
+  if (!content) {
+    scenarios.value = [{ name: 'New Scenario', isOutline: false, steps: [], examples: [] }]
+    featureName.value = ''
+    featureDescription.value = ''
+    return
+  }
+
+  // Parse Feature name
+  const featureMatch = content.match(/^Feature:\s*(.+?)(?:\n|$)/i)
+  if (featureMatch) featureName.value = featureMatch[1].trim()
+
+  // Parse description (lines between Feature and first Scenario)
+  const lines = content.split('\n')
+  let descLines = []
+  let scenarioStarted = false
+  for (const line of lines.slice(1)) {
+    if (line.match(/^\s*Scenario(?:\s+Outline)?:/i)) {
+      scenarioStarted = true
+      break
+    }
+    if (line.trim() && !line.match(/^As a|I want|So that/)) {
+      descLines.push(line.trim())
+    }
+  }
+  featureDescription.value = descLines.join('\n')
+
+  // Parse scenarios (including Scenario Outline)
+  scenarios.value = []
+  // Split by Scenario or Scenario Outline
+  const scenarioBlocks = content.split(/^\s*Scenario(?:\s+Outline)?:/im)
+  for (let i = 1; i < scenarioBlocks.length; i++) {
+    const block = scenarioBlocks[i]
+    const blockLines = block.trim().split('\n')
+    const scenarioName = blockLines[0]?.trim() || `Scenario ${i}`
+
+    // Check if this was a Scenario Outline
+    const isOutline = content.match(new RegExp(`Scenario\\s+Outline:\\s*${escapeRegExp(scenarioName)}`, 'i')) !== null
+
+    const steps: ScenarioStep[] = []
+    const examples: ExampleRow[] = []
+    let inExamples = false
+    let exampleHeaders: string[] = []
+
+    for (const line of blockLines.slice(1)) {
+      // Check for Examples section
+      if (line.match(/^\s*Examples:/i)) {
+        inExamples = true
+        continue
+      }
+
+      if (inExamples) {
+        // Parse examples table
+        const trimmedLine = line.trim()
+        if (trimmedLine.startsWith('|')) {
+          const cells = trimmedLine.split('|').map(c => c.trim()).filter(c => c)
+          if (exampleHeaders.length === 0) {
+            exampleHeaders = cells
+          } else if (cells.length === exampleHeaders.length) {
+            const row: ExampleRow = {}
+            exampleHeaders.forEach((header, idx) => {
+              row[header] = cells[idx] || ''
+            })
+            examples.push(row)
+          }
+        }
+        continue
+      }
+
+      const stepMatch = line.match(/^\s*(Given|When|Then|And|But)\s+(.+)$/i)
+      if (stepMatch) {
+        const keyword = stepMatch[1] as ScenarioStep['keyword']
+        const stepText = stepMatch[2].trim()
+        const matched = findMatchingStepDef(stepText)
+        steps.push({
+          keyword,
+          stepDefId: matched?.id || '',
+          matchedDef: matched || null,
+          paramValues: extractParamValues(stepText, matched),
+          text: stepText
+        })
+      }
+    }
+
+    scenarios.value.push({ name: scenarioName, isOutline, steps, examples })
+  }
+}
+
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function syncFromVisualToCode() {
+  let content = `Feature: ${featureName.value || 'New Feature'}\n`
+
+  if (featureDescription.value) {
+    content += `\n${featureDescription.value}\n`
+  }
+
+  for (const scenario of scenarios.value) {
+    if (scenario.isOutline) {
+      content += `\n  Scenario Outline: ${scenario.name}\n`
+    } else {
+      content += `\n  Scenario: ${scenario.name}\n`
+    }
+    for (const step of scenario.steps) {
+      content += `    ${step.keyword} ${step.text}\n`
+    }
+
+    // Add Examples table for Scenario Outline
+    if (scenario.isOutline && scenario.examples.length > 0) {
+      const headers = Object.keys(scenario.examples[0])
+      content += `\n    Examples:\n`
+      content += `      | ${headers.join(' | ')} |\n`
+      for (const row of scenario.examples) {
+        content += `      | ${headers.map(h => row[h]).join(' | ')} |\n`
+      }
+    }
+  }
+
+  featureForm.content = content
+  validateGherkin()
+}
+
+function findMatchingStepDef(stepText: string): StepDefinition | null {
+  for (const stepDef of stepDefinitions.value) {
+    let pattern = stepDef.gherkinPattern
+    pattern = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+    pattern = pattern.replace(/\\{([^}]+)\\}/g, '(.+?)')
+    try {
+      if (new RegExp(`^${pattern}$`, 'i').test(stepText)) {
+        return stepDef
+      }
+    } catch {}
+  }
+  return null
+}
+
+function extractParamValues(stepText: string, stepDef: StepDefinition | null): Record<string, string> {
+  if (!stepDef || !stepDef.parameters) return {}
+
+  const values: Record<string, string> = {}
+  let pattern = stepDef.gherkinPattern
+  const regexStrs: string[] = []
+
+  for (const param of stepDef.parameters) {
+    pattern = pattern.replace(`\\{${param.name}\\}`, '(.+?)')
+    regexStrs.push(param.name)
+  }
+
+  pattern = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+
+  try {
+    const regex = new RegExp(`^${pattern}$`, 'i')
+    const match = stepText.match(regex)
+    if (match) {
+      for (let i = 0; i < regexStrs.length; i++) {
+        values[regexStrs[i]] = match[i + 1] || ''
+      }
+    }
+  } catch {}
+
+  return values
+}
+
+// Visual editor actions
+function addScenario() {
+  scenarios.value.push({ name: 'New Scenario', isOutline: false, steps: [], examples: [] })
+  syncFromVisualToCode()
+}
+
+function toggleScenarioOutline(scenarioIdx: number) {
+  const scenario = scenarios.value[scenarioIdx]
+  scenario.isOutline = !scenario.isOutline
+  if (scenario.isOutline && scenario.examples.length === 0) {
+    // Initialize with example headers from step parameters
+    const headers = new Set<string>()
+    for (const step of scenario.steps) {
+      if (step.matchedDef?.parameters) {
+        for (const param of step.matchedDef.parameters) {
+          headers.add(param.name)
+        }
+      }
+    }
+    if (headers.size > 0) {
+      const emptyRow: ExampleRow = {}
+      headers.forEach(h => emptyRow[h] = '')
+      scenario.examples = [emptyRow]
+    }
+  }
+  syncFromVisualToCode()
+}
+
+function removeScenario(idx: number) {
+  scenarios.value.splice(idx, 1)
+  syncFromVisualToCode()
+}
+
+function addStep(scenarioIdx: number) {
+  scenarios.value[scenarioIdx].steps.push({
+    keyword: 'When',
+    stepDefId: '',
+    matchedDef: null,
+    paramValues: {},
+    text: ''
+  })
+
+  // Update examples table headers if scenario is outline
+  const scenario = scenarios.value[scenarioIdx]
+  if (scenario.isOutline) {
+    const headers = new Set<string>()
+    for (const step of scenario.steps) {
+      if (step.matchedDef?.parameters) {
+        for (const param of step.matchedDef.parameters) {
+          headers.add(param.name)
+        }
+      }
+    }
+    // Update existing examples rows to include new columns
+    if (scenario.examples.length > 0) {
+      for (const row of scenario.examples) {
+        headers.forEach(h => {
+          if (!(h in row)) {
+            row[h] = ''
+          }
+        })
+      }
+    }
+  }
+
+  syncFromVisualToCode()
+}
+
+function removeStep(scenarioIdx: number, stepIdx: number) {
+  scenarios.value[scenarioIdx].steps.splice(stepIdx, 1)
+  syncFromVisualToCode()
+}
+
+function moveStep(scenarioIdx: number, stepIdx: number, direction: number) {
+  const steps = scenarios.value[scenarioIdx].steps
+  const newIdx = stepIdx + direction
+  if (newIdx >= 0 && newIdx < steps.length) {
+    const [removed] = steps.splice(stepIdx, 1)
+    steps.splice(newIdx, 0, removed)
+    syncFromVisualToCode()
+  }
+}
+
+function onStepDefChange(step: ScenarioStep, scenarioIdx: number, stepIdx: number) {
+  step.matchedDef = stepDefinitions.value.find(s => s.id === step.stepDefId) || null
+  if (step.matchedDef) {
+    // Initialize param values with defaults
+    step.paramValues = {}
+    if (step.matchedDef.parameters) {
+      for (const param of step.matchedDef.parameters) {
+        step.paramValues[param.name] = param.default || ''
+      }
+
+      // Update examples table if scenario is outline
+      const scenario = scenarios.value[scenarioIdx]
+      if (scenario.isOutline) {
+        for (const row of scenario.examples) {
+          for (const param of step.matchedDef!.parameters) {
+            if (!(param.name in row)) {
+              row[param.name] = ''
+            }
+          }
+        }
+      }
+    }
+    updateStepText(step)
+    syncFromVisualToCode()
+  }
+}
+
+function updateStepText(step: ScenarioStep) {
+  if (!step.matchedDef) {
+    step.text = ''
+    return
+  }
+
+  let text = step.matchedDef.gherkinPattern
+  if (step.matchedDef.parameters) {
+    for (const param of step.matchedDef.parameters) {
+      const value = step.paramValues[param.name] || param.default || `<${param.name}>`
+      text = text.split(`{${param.name}}`).join(value)
+    }
+  }
+  step.text = text
+  syncFromVisualToCode()
+}
+
+function addExampleRow(scenarioIdx: number) {
+  const scenario = scenarios.value[scenarioIdx]
+  if (scenario.examples.length === 0) {
+    // Get headers from step parameters
+    const headers = new Set<string>()
+    for (const step of scenario.steps) {
+      if (step.matchedDef?.parameters) {
+        for (const param of step.matchedDef.parameters) {
+          headers.add(param.name)
+        }
+      }
+    }
+    const emptyRow: ExampleRow = {}
+    headers.forEach(h => emptyRow[h] = '')
+    scenario.examples.push(emptyRow)
+  } else {
+    // Clone the last row or create empty from headers
+    const headers = Object.keys(scenario.examples[0])
+    const newRow: ExampleRow = {}
+    headers.forEach(h => newRow[h] = '')
+    scenario.examples.push(newRow)
+  }
+  syncFromVisualToCode()
+}
+
+function removeExampleRow(scenarioIdx: number, rowIdx: number) {
+  scenarios.value[scenarioIdx].examples.splice(rowIdx, 1)
+  syncFromVisualToCode()
+}
+
+function getExampleHeaders(scenario: Scenario): string[] {
+  if (scenario.examples.length === 0) return []
+  return Object.keys(scenario.examples[0])
+}
+
+function addExampleColumn(scenarioIdx: number, columnName: string) {
+  const scenario = scenarios.value[scenarioIdx]
+  for (const row of scenario.examples) {
+    row[columnName] = ''
+  }
+  syncFromVisualToCode()
+}
+
+function removeExampleColumn(scenarioIdx: number, columnName: string) {
+  const scenario = scenarios.value[scenarioIdx]
+  for (const row of scenario.examples) {
+    delete row[columnName]
+  }
+  syncFromVisualToCode()
+}
+
+function onCodeEditorChange() {
+  if (editorMode.value === 'code') {
+    syncFromCodeToVisual()
+  }
+}
+
+// Watch for editor mode changes
+watch(editorMode, (newMode) => {
+  if (newMode === 'visual') {
+    syncFromCodeToVisual()
+  }
+})
+
+// When opening modal, parse content
+watch(() => showFeatureModal.value, (isOpen) => {
+  if (isOpen && editorMode.value === 'visual') {
+    syncFromCodeToVisual()
+  }
 })
 
 const defaultGherkin = `Feature: New Feature
@@ -570,6 +1106,10 @@ function confirmDeleteFeature(feature: Feature) {
 }
 
 async function saveFeature() {
+  // Sync from visual editor if in visual mode
+  if (editorMode.value === 'visual') {
+    syncFromVisualToCode()
+  }
   const data = { ...featureForm, projectId, enabled: featureForm.enabled ? 1 : 0 }
   if (editingFeature.value) {
     await projectStore.updateFeature(editingFeature.value.id, data)
@@ -703,7 +1243,7 @@ function insertStep() {
   if (step.parameters) {
     for (const param of step.parameters) {
       const value = paramValues.value[param.name] || param.default || `{${param.name}}`
-      stepText = stepText.replace(new RegExp(`\\{${param.name}\\}`, 'g'), value)
+      stepText = stepText.split(`{${param.name}}`).join(value)
     }
   }
 
@@ -738,7 +1278,7 @@ function updateStepPreview() {
   if (step.parameters) {
     for (const param of step.parameters) {
       const value = paramValues.value[param.name] || param.default || `{${param.name}}`
-      preview = preview.replace(new RegExp(`\\{${param.name}\\}`, 'g'), value)
+      preview = preview.split(`{${param.name}}`).join(value)
     }
   }
 
@@ -792,7 +1332,6 @@ function validateGherkin() {
     for (const line of stepLines) {
       const stepText = line.replace(/^\s*(Given|When|Then|And|But)\s+/, '')
       let matched = false
-      let matchedPattern = ''
 
       // Check against step definitions from database
       for (const stepDef of stepDefinitions.value) {
@@ -813,7 +1352,6 @@ function validateGherkin() {
         try {
           if (new RegExp(`^${pattern}$`, 'i').test(stepText)) {
             matched = true
-            matchedPattern = stepDef.gherkinPattern
             stepMatchCount.value++
             validStepsList.value.push(stepText)
             break
@@ -834,8 +1372,7 @@ function validateGherkin() {
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i]
     if (line.match(/^(Given|When|Then|And|But)/)) {
-      const indent = line.match(/^\s*/)?.[0]?.length || 0
-      if (indent === 0) {
+      if (!line.match(/^s/)) {
         errors.push('Step keywords need indentation')
         break
       }
@@ -1788,5 +2325,342 @@ watch(enabledFeatures, (newFeatures) => {
   font-size: 0.7rem;
   color: var(--text-secondary);
   padding: 0.25rem 0;
+}
+
+/* Editor Toggle */
+.editor-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+
+.tab-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 0.375rem 0.375rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.tab-btn:hover:not(.active) {
+  background: var(--bg-tertiary);
+}
+
+/* Visual Editor */
+.visual-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.feature-header-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.feature-header-edit label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.feature-name-input,
+.feature-desc-input {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg-primary);
+  font-size: 0.875rem;
+}
+
+.feature-desc-input {
+  resize: vertical;
+}
+
+/* Scenario Block */
+.scenario-block {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.scenario-header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.scenario-name-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--bg-primary);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* Steps List */
+.steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.step-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--bg-tertiary);
+  border-radius: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.keyword-select {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  background: var(--bg-primary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  min-width: 70px;
+}
+
+.step-select {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  background: var(--bg-primary);
+  font-size: 0.8rem;
+}
+
+.step-params-inline {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.param-input-inline {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  background: var(--bg-primary);
+  font-size: 0.8rem;
+  min-width: 100px;
+}
+
+.step-status {
+  font-size: 0.875rem;
+  width: 20px;
+  text-align: center;
+}
+
+.step-status.valid {
+  color: #10b981;
+}
+
+.step-status.invalid {
+  color: var(--error);
+}
+
+.add-step-btn {
+  margin-top: 0.5rem;
+}
+
+/* Scenario Type Toggle */
+.scenario-type-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.checkbox-label-inline input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* Examples Section */
+.examples-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.examples-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.examples-header h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.examples-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.column-name-input {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  background: var(--bg-primary);
+  font-size: 0.8rem;
+  min-width: 120px;
+}
+
+.examples-empty {
+  text-align: center;
+  padding: 1.5rem;
+  background: var(--bg-tertiary);
+  border-radius: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.examples-empty p {
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+}
+
+.examples-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.examples-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.examples-header-cell {
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 0;
+  font-weight: 600;
+}
+
+.examples-header-cell:last-child {
+  border-right: none;
+}
+
+.header-cell-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  gap: 0.5rem;
+}
+
+.actions-header {
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem;
+  font-weight: 600;
+  width: 60px;
+  text-align: center;
+}
+
+.examples-cell {
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 0;
+}
+
+.examples-cell:last-child {
+  border-right: none;
+}
+
+.example-cell-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  font-family: inherit;
+}
+
+.example-cell-input:focus {
+  outline: none;
+  background: var(--bg-tertiary);
+}
+
+.examples-cell-actions {
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem;
+  text-align: center;
+  width: 60px;
+}
+
+.btn-icon-small {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 0.25rem;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+}
+
+.btn-icon-small:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.btn-icon-small.btn-error:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--error);
+}
+
+/* Param row in step builder */
+.param-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.param-row label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 </style>
