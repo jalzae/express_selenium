@@ -63,66 +63,66 @@
           <form @submit.prevent="saveProject">
             <div class="modal-body">
               <div class="form-group">
-                <label class="form-label">Project Name *</label>
-                <input v-model="projectForm.name" required placeholder="My E2E Tests" />
+                <label class="form-label" for="project-name">Project Name *</label>
+                <input id="project-name" v-model="projectForm.name" required placeholder="My E2E Tests" />
               </div>
               <div class="form-group">
-                <label class="form-label">Type *</label>
-                <select v-model="projectForm.type" required>
+                <label class="form-label" for="project-type">Type *</label>
+                <select id="project-type" v-model="projectForm.type" required>
                   <option value="web">🌐 Web (Playwright)</option>
                   <option value="mobile">📱 Mobile (WDIO/Appium)</option>
                 </select>
               </div>
               <template v-if="projectForm.type === 'web'">
                 <div class="form-group">
-                  <label class="form-label">Base URL</label>
-                  <input v-model="projectForm.baseUrl" placeholder="https://example.com" />
+                  <label class="form-label" for="base-url">Base URL</label>
+                  <input id="base-url" v-model="projectForm.baseUrl" placeholder="https://example.com" />
                 </div>
               </template>
               <template v-else>
                 <div class="form-row">
                   <div class="form-group">
-                    <label class="form-label">Device Name</label>
-                    <input v-model="projectForm.deviceName" placeholder="Pixel_5" />
+                    <label class="form-label" for="device-name">Device Name</label>
+                    <input id="device-name" v-model="projectForm.deviceName" placeholder="Pixel_5" />
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Platform Version</label>
-                    <input v-model="projectForm.platformVersion" placeholder="12" />
+                    <label class="form-label" for="platform-version">Platform Version</label>
+                    <input id="platform-version" v-model="projectForm.platformVersion" placeholder="12" />
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label class="form-label">App Package</label>
-                    <input v-model="projectForm.appPackage" placeholder="com.example.app" />
+                    <label class="form-label" for="app-package">App Package</label>
+                    <input id="app-package" v-model="projectForm.appPackage" placeholder="com.example.app" />
                   </div>
                   <div class="form-group">
-                    <label class="form-label">App Activity</label>
-                    <input v-model="projectForm.appActivity" placeholder=".MainActivity" />
+                    <label class="form-label" for="app-activity">App Activity</label>
+                    <input id="app-activity" v-model="projectForm.appActivity" placeholder=".MainActivity" />
                   </div>
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Automation Name</label>
-                  <input v-model="projectForm.automationName" placeholder="UiAutomator2" />
+                  <label class="form-label" for="automation-name">Automation Name</label>
+                  <input id="automation-name" v-model="projectForm.automationName" placeholder="UiAutomator2" />
                 </div>
 
                 <!-- Appium Connection -->
                 <div class="form-section-title">Appium Server Configuration</div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label class="form-label">Appium Host</label>
-                    <input v-model="projectForm.appiumHost" placeholder="localhost" />
+                    <label class="form-label" for="appium-host">Appium Host</label>
+                    <input id="appium-host" v-model="projectForm.appiumHost" placeholder="localhost" />
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Appium Port</label>
-                    <input v-model="projectForm.appiumPort" placeholder="4723" />
+                    <label class="form-label" for="appium-port">Appium Port</label>
+                    <input id="appium-port" v-model="projectForm.appiumPort" placeholder="4723" />
                   </div>
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Appium Path</label>
-                  <input v-model="projectForm.appiumPath" placeholder="/wd/hub" />
+                  <label class="form-label" for="appium-path">Appium Path</label>
+                  <input id="appium-path" v-model="projectForm.appiumPath" placeholder="/wd/hub" />
                 </div>
                 <div class="form-group">
-                  <label class="form-label">APK File Name</label>
+                  <label class="form-label" for="apk-path-input">APK Path</label>
                   <div class="file-input-wrapper">
                     <input
                       type="file"
@@ -133,15 +133,16 @@
                       ref="apkFileInput"
                     />
                     <button type="button" class="btn-sm btn-secondary" @click="selectApkFile">
-                      📁 Browse APK
+                      📁 Browse
                     </button>
                     <input
-                      v-model="projectForm.apkPath"
-                      placeholder="app-release.apk"
+                      :value="projectForm.apkPath"
+                      @input="projectForm.apkPath = ($event.target as HTMLInputElement).value"
+                      placeholder="/path/to/app-release.apk or app-release.apk"
                       class="apk-name-input"
                     />
                   </div>
-                  <p class="help-text">Enter APK filename. Make sure the APK is accessible to Appium server.</p>
+                  <p class="help-text">Enter full local path or filename. Browser only gets filename - paste full path manually if needed.</p>
                 </div>
               </template>
             </div>
@@ -179,7 +180,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { useProjectStore, type Project } from '../stores/projects'
 
 const projectStore = useProjectStore()
@@ -190,6 +191,27 @@ const deletingProject = ref<Project | null>(null)
 
 // APK file input ref
 const apkFileInput = ref<HTMLInputElement | null>(null)
+
+// Local storage key for APK path
+const APK_PATH_KEY = 'last_apk_path'
+
+// Load saved APK path from localStorage
+const getSavedApkPath = (): string => {
+  try {
+    return localStorage.getItem(APK_PATH_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+
+// Save APK path to localStorage
+const saveApkPath = (path: string) => {
+  try {
+    localStorage.setItem(APK_PATH_KEY, path)
+  } catch {
+    // Ignore storage errors
+  }
+}
 
 const projectForm = reactive({
   name: '',
@@ -206,9 +228,18 @@ const projectForm = reactive({
   apkPath: ''
 })
 
+// Watch apkPath changes and save to localStorage
+watch(() => projectForm.apkPath, (newPath) => {
+  if (newPath) {
+    saveApkPath(newPath)
+  }
+})
+
 function openProjectModal() {
   editingProject.value = null
   resetForm()
+  // Load saved APK path for new mobile projects
+  projectForm.apkPath = getSavedApkPath()
   showProjectModal.value = true
 }
 
@@ -226,7 +257,7 @@ function editProject(project: Project) {
     appiumHost: project.appiumHost || 'localhost',
     appiumPort: project.appiumPort || '4723',
     appiumPath: project.appiumPath || '/',
-    apkPath: project.apkPath || ''
+    apkPath: project.apkPath || getSavedApkPath()
   })
   showProjectModal.value = true
 }
@@ -278,8 +309,10 @@ function onApkFileSelected(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (file) {
-    // Just set the filename (browsers don't allow full path for security)
-    projectForm.apkPath = file.name
+    // Browser only gives filename for security - user can manually edit for full path
+    const path = file.name
+    projectForm.apkPath = path
+    saveApkPath(path)
   }
 }
 </script>
