@@ -5,3 +5,6 @@ build
 bun.lock
 .DS_Store
 screenshots/*.*
+.claude
+recordings/*.*
+logs/*.*
