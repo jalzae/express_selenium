@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 8945958
+              "duration": 5698250
             }
           },
           {
@@ -27,7 +27,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 5008989499,
+              "duration": 5009845583,
               "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/node_modules/@cucumber/cucumber/src/time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
             }
           },
@@ -101,7 +101,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 3208156415
+              "duration": 3204625540
             },
             "embeddings": [
               {
@@ -109,11 +109,11 @@
                 "mime_type": "image/png"
               },
               {
-                "data": "UmVjb3JkaW5nOiBkYXNoYm9hcmQvcHVibGljL3JlY29yZGluZ3MvMTc3ODQzMDU0MzQxMl8wNXl5NGI5aHdfU3VjY2Vzc2Z1bF9sb2dpbl93aXRoX3ZhbGlkX2NyZWRlbnRpYWxzLTE3Nzg0MzA1NDYxODMubXA0",
+                "data": "UmVjb3JkaW5nOiBkYXNoYm9hcmQvcHVibGljL3JlY29yZGluZ3MvMTc3ODQzMTI3NzYzMy12OHdndzVkb2gtU3VjY2Vzc2Z1bF9sb2dpbl93aXRoX3ZhbGlkX2NyZWRlbnRpYWxzLTE3Nzg0MzEyODAyNDMubXA0",
                 "mime_type": "text/plain"
               },
               {
-                "data": "PGEgaHJlZj0iZGFzaGJvYXJkL3B1YmxpYy9yZWNvcmRpbmdzLzE3Nzg0MzA1NDM0MTJfMDV5eTRiOWh3X1N1Y2Nlc3NmdWxfbG9naW5fd2l0aF92YWxpZF9jcmVkZW50aWFscy0xNzc4NDMwNTQ2MTgzLm1wNCI+RG93bmxvYWQgcmVjb3JkaW5nPC9hPg==",
+                "data": "PGEgaHJlZj0iZGFzaGJvYXJkL3B1YmxpYy9yZWNvcmRpbmdzLzE3Nzg0MzEyNzc2MzMtdjh3Z3c1ZG9oLVN1Y2Nlc3NmdWxfbG9naW5fd2l0aF92YWxpZF9jcmVkZW50aWFscy0xNzc4NDMxMjgwMjQzLm1wNCI+RG93bmxvYWQgcmVjb3JkaW5nPC9hPg==",
                 "mime_type": "text/html"
               }
             ]
@@ -134,7 +134,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 2595166
+              "duration": 2101375
             }
           },
           {
@@ -147,7 +147,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 4832573291
+              "duration": 4991244834
             }
           },
           {
@@ -160,7 +160,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 63666250
+              "duration": 57927750
             }
           },
           {
@@ -173,7 +173,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 58061499
+              "duration": 48206209
             }
           },
           {
@@ -186,7 +186,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 5002934749,
+              "duration": 5001425959,
               "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/node_modules/@cucumber/cucumber/src/time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
             }
           },
@@ -218,7 +218,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 3345260999
+              "duration": 3385893083
             },
             "embeddings": [
               {
@@ -226,11 +226,11 @@
                 "mime_type": "image/png"
               },
               {
-                "data": "UmVjb3JkaW5nOiBkYXNoYm9hcmQvcHVibGljL3JlY29yZGluZ3MvMTc3ODQzMDU0MzQxMl8wNXl5NGI5aHdfRmFpbGVkX2xvZ2luX3dpdGhfaW52YWxpZF9jcmVkZW50aWFscy0xNzc4NDMwNTU0NDEzLm1wNA==",
+                "data": "UmVjb3JkaW5nOiBkYXNoYm9hcmQvcHVibGljL3JlY29yZGluZ3MvMTc3ODQzMTI3NzYzMy12OHdndzVkb2gtRmFpbGVkX2xvZ2luX3dpdGhfaW52YWxpZF9jcmVkZW50aWFscy0xNzc4NDMxMjg4NDY4Lm1wNA==",
                 "mime_type": "text/plain"
               },
               {
-                "data": "PGEgaHJlZj0iZGFzaGJvYXJkL3B1YmxpYy9yZWNvcmRpbmdzLzE3Nzg0MzA1NDM0MTJfMDV5eTRiOWh3X0ZhaWxlZF9sb2dpbl93aXRoX2ludmFsaWRfY3JlZGVudGlhbHMtMTc3ODQzMDU1NDQxMy5tcDQiPkRvd25sb2FkIHJlY29yZGluZzwvYT4=",
+                "data": "PGEgaHJlZj0iZGFzaGJvYXJkL3B1YmxpYy9yZWNvcmRpbmdzLzE3Nzg0MzEyNzc2MzMtdjh3Z3c1ZG9oLUZhaWxlZF9sb2dpbl93aXRoX2ludmFsaWRfY3JlZGVudGlhbHMtMTc3ODQzMTI4ODQ2OC5tcDQiPkRvd25sb2FkIHJlY29yZGluZzwvYT4=",
                 "mime_type": "text/html"
               }
             ]
@@ -245,6 +245,6 @@
     "keyword": "Feature",
     "name": "User Login on Sauce Demo Shopify",
     "tags": [],
-    "uri": "test-results/1778430543412-05yy4b9hw/features/1778423663471-bdq5islb4.feature"
+    "uri": "test-results/1778431277633-v8wgw5doh/features/1778423663471-bdq5islb4.feature"
   }
 ]

@@ -18,3 +18,4 @@ dashboard/node_modules
 e2e-dashboard.db-shm
 e2e-dashboard.db-wal
 public/
+cucumber-report.json
