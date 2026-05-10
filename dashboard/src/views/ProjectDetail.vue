@@ -356,7 +356,7 @@ Example: I want to test the login functionality. User should be able to login wi
                         <option value="form">📋 Form</option>
                         <option value="scroll">📜 Scroll</option>
                       </select>
-                      <select v-model="selectedStepDef" class="step-select">
+                      <select v-model="selectedStepDef" class="step-select" :size="filteredStepDefs.length > 10 ? 10 : undefined">
                         <option value="">Select step...</option>
                         <option v-for="step in filteredStepDefs" :key="step.id" :value="step.id">
                           {{ stepStore.getCategoryIcon(step.category || '') }} {{ step.name }}
@@ -442,7 +442,7 @@ Example: I want to test the login functionality. User should be able to login wi
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore, type Feature } from '../stores/projects'
 import { useTestRunStore } from '../stores/testRuns'
@@ -567,7 +567,7 @@ function syncFromCodeToVisual() {
   featureDescription.value = descLines.join('\n')
 
   // Parse scenarios (including Scenario Outline)
-  scenarios.value = []
+  const newScenarios: Scenario[] = []
   // Split by Scenario or Scenario Outline
   const scenarioBlocks = content.split(/^\s*Scenario(?:\s+Outline)?:/im)
   for (let i = 1; i < scenarioBlocks.length; i++) {
@@ -623,8 +623,11 @@ function syncFromCodeToVisual() {
       }
     }
 
-    scenarios.value.push({ name: scenarioName, isOutline, steps, examples })
+    newScenarios.push({ name: scenarioName, isOutline, steps, examples })
   }
+
+  // Update scenarios - create new array reference to trigger reactivity
+  scenarios.value = newScenarios.length > 0 ? newScenarios : [{ name: 'New Scenario', isOutline: false, steps: [], examples: [] }]
 }
 
 function escapeRegExp(string: string): string {
@@ -900,8 +903,22 @@ watch(editorMode, (newMode) => {
 })
 
 // When opening modal, parse content
-watch(() => showFeatureModal.value, (isOpen) => {
+watch(() => showFeatureModal.value, async (isOpen) => {
   if (isOpen && editorMode.value === 'visual') {
+    // Wait a bit for everything to settle
+    await nextTick()
+    // Ensure step definitions are available
+    if (stepDefinitions.value.length === 0) {
+      await stepStore.fetchStepDefinitions(projectId)
+    }
+    await nextTick()
+    syncFromCodeToVisual()
+  }
+})
+
+// Re-sync when step definitions change (in case they were loaded after initial sync)
+watch(stepDefinitions, (newDefs) => {
+  if (showFeatureModal.value && editorMode.value === 'visual' && newDefs.length > 0) {
     syncFromCodeToVisual()
   }
 })
@@ -952,12 +969,17 @@ async function editFeature(feature: Feature) {
     content: feature.content,
     enabled: !!feature.enabled
   })
-  // Auto-seed step library if empty
-  if (stepDefinitions.value.length === 0) {
+  // Ensure step definitions are loaded FIRST
+  await stepStore.fetchStepDefinitions(projectId)
+  // Auto-seed if still empty
+  if (stepStore.steps.length === 0) {
     try {
       await stepStore.importFromLibrary(projectId, 'playwright')
-    } catch { /* silently ignore if already imported */ }
+      // Fetch again after import to ensure we have the steps
+      await stepStore.fetchStepDefinitions(projectId)
+    } catch { /* ignore */ }
   }
+  // Open modal - watch will handle sync
   showFeatureModal.value = true
 }
 
@@ -2230,6 +2252,11 @@ watch(enabledFeatures, (newFeatures) => {
   background: var(--bg-primary);
   font-size: 0.8rem;
   margin-bottom: 0.5rem;
+}
+
+/* Make select options scrollable by using size attribute for large lists */
+.step-select[size] {
+  height: auto;
 }
 
 .step-params-inline {
