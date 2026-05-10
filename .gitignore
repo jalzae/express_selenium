@@ -8,3 +8,4 @@ screenshots/*.*
 .claude
 recordings/*.*
 logs/*.*
+.env
