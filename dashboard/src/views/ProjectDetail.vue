@@ -991,6 +991,7 @@ function onBackgroundStepDefChange(step: ScenarioStep, _stepIdx: number) {
       if (placeholderMatches) {
         step.matchedDef.parameters = placeholderMatches.map((name) => ({
           name: name.replace(/[{}]/g, ''),
+          type: 'string' as const,
           default: ''
         }))
       }
