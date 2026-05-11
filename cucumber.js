@@ -8,7 +8,6 @@ module.exports = {
     "--require src/steps.ts",
     "--require src/hooks.ts",
     "--format json:cucumber-report.json",
-    "--timeout 60000",
   ].join(" "),
   afterLaunch: async function () {
     const htmlReportOptions = {
