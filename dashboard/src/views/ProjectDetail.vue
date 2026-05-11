@@ -422,41 +422,7 @@ Example: I want to test the login functionality. User should be able to login wi
     And I click on element having css selector &quot;button[type='submit']&quot;
     Then the URL should contain &quot;/dashboard&quot;"></textarea>
                   <div class="gherkin-sidebar">
-                    <!-- Step Builder Quick Add -->
-                    <div class="step-builder">
-                      <h4>Quick Add Step</h4>
-                      <select v-model="selectedStepCategory" @change="filterSteps" class="step-select">
-                        <option value="">All Categories</option>
-                        <option value="navigation">🧭 Navigation</option>
-                        <option value="input">⌨️ Input</option>
-                        <option value="click">👆 Click</option>
-                        <option value="assertion">✓ Assertion</option>
-                        <option value="wait">⏱️ Wait</option>
-                        <option value="form">📋 Form</option>
-                        <option value="scroll">📜 Scroll</option>
-                      </select>
-                      <select v-model="selectedStepDef" class="step-select" :size="filteredStepDefs.length > 10 ? 10 : undefined">
-                        <option value="">Select step...</option>
-                        <option v-for="step in filteredStepDefs" :key="step.id" :value="step.id">
-                          {{ stepStore.getCategoryIcon(step.category || '') }} {{ step.name }}
-                        </option>
-                      </select>
-
-                      <div v-if="selectedStepDefData" class="step-params">
-                        <div v-for="param in selectedStepDefData.parameters" :key="param.name" class="param-row">
-                          <label>{{ param.name }}</label>
-                          <input v-model="paramValues[param.name]" @input="updateStepPreview" class="param-input" />
-                        </div>
-                      </div>
-
-                      <div class="step-preview-result">
-                        <code>{{ stepPreviewText }}</code>
-                      </div>
-
-                      <button type="button" class="btn-sm btn-primary" @click="insertStep">
-                        + Insert to Code
-                      </button>
-                    </div>
+                   
 
                     <!-- Validation Errors -->
                     <div v-if="invalidSteps.length > 0" class="validation-errors">
@@ -682,14 +648,15 @@ function syncFromCodeToVisual() {
     const line = lines[i]
     if (line.match(/^\s*Background:/i)) {
       backgroundStartIdx = i
-      break
+      // Don't break - continue to find Scenario
+      continue
     }
     if (line.match(/^\s*Scenario(?:\s+Outline)?:/i)) {
       firstScenarioIdx = i
       break
     }
-    // Skip user story lines for description
-    if (line.trim() && !line.match(/^As a|I want|So that/)) {
+    // Only add to description if we haven't found Background yet
+    if (backgroundStartIdx === -1 && line.trim() && !line.match(/^As a|I want|So that/)) {
       descLines.push(line.trim())
     }
   }
@@ -719,22 +686,41 @@ function syncFromCodeToVisual() {
 
   // Parse scenarios (including Scenario Outline)
   const newScenarios: Scenario[] = []
-  // Split by Scenario or Scenario Outline
-  const scenarioBlocks = content.split(/^\s*Scenario(?:\s+Outline)?:/im)
-  for (let i = 1; i < scenarioBlocks.length; i++) {
-    const block = scenarioBlocks[i]
-    const blockLines = block.trim().split('\n')
-    const scenarioName = blockLines[0]?.trim() || `Scenario ${i}`
 
-    // Check if this was a Scenario Outline
-    const isOutline = content.match(new RegExp(`Scenario\\s+Outline:\\s*${escapeRegExp(scenarioName)}`, 'i')) !== null
+  // Find all Scenario/Scenario Outline positions using LINE indices (not character)
+  const scenarioMatches: { name: string; isOutline: boolean; lineIdx: number }[] = []
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const scenarioMatch = line.match(/^\s*(Scenario(?:\s+Outline)?):\s*(.+?)$/i)
+    if (scenarioMatch) {
+      scenarioMatches.push({
+        name: scenarioMatch[2]?.trim() || `Scenario`,
+        isOutline: scenarioMatch[1]?.toLowerCase().includes('outline'),
+        lineIdx: i
+      })
+    }
+  }
+
+  // Parse each scenario
+  for (let i = 0; i < scenarioMatches.length; i++) {
+    const { name: scenarioName, isOutline, lineIdx } = scenarioMatches[i]
+    const endLineIdx = i + 1 < scenarioMatches.length ? scenarioMatches[i + 1].lineIdx : lines.length
+
+    // Extract scenario content (from line AFTER scenario name to next scenario or end)
+    const blockLines = lines.slice(lineIdx + 1, endLineIdx)
 
     const steps: ScenarioStep[] = []
     const examples: ExampleRow[] = []
     let inExamples = false
     let exampleHeaders: string[] = []
 
-    for (const line of blockLines.slice(1)) {
+    for (const line of blockLines) {
+      // Skip empty lines and comments
+      if (!line.trim() || line.trim().startsWith('#')) {
+        continue
+      }
+
       // Check for Examples section
       if (line.match(/^\s*Examples:/i)) {
         inExamples = true
@@ -779,10 +765,6 @@ function syncFromCodeToVisual() {
 
   // Update scenarios - create new array reference to trigger reactivity
   scenarios.value = newScenarios.length > 0 ? newScenarios : [{ name: 'New Scenario', isOutline: false, steps: [], examples: [] }]
-}
-
-function escapeRegExp(string: string): string {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 function syncFromVisualToCode() {
@@ -847,22 +829,34 @@ function extractParamValues(stepText: string, stepDef: StepDefinition | null): R
 
   const values: Record<string, string> = {}
   let pattern = stepDef.gherkinPattern
-  const regexStrs: string[] = []
+  const paramNames: string[] = []
 
-  // Escape regex specials first
-  pattern = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-
-  for (const param of stepDef.parameters) {
-    pattern = pattern.replace(`\\{${param.name}\\}`, '(.*?)')
-    regexStrs.push(param.name)
+  // Use a two-step approach to avoid escaping issues:
+  // 1. Replace parameters with temporary tokens BEFORE escaping
+  // 2. Escape special characters
+  // 3. Replace tokens with capture groups
+  let tempPattern = pattern
+  for (let i = 0; i < stepDef.parameters.length; i++) {
+    const param = stepDef.parameters[i]
+    tempPattern = tempPattern.replace(`{${param.name}}`, `__PARAM_${i}__`)
+    paramNames.push(param.name)
   }
 
+  // Now escape special regex characters
+  tempPattern = tempPattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+
+  // Replace tokens with capture groups (more permissive than findMatchingStepDef)
+  tempPattern = tempPattern.replace(/__PARAM_(\d+)__/g, '(.+?)')
+
   try {
-    const regex = new RegExp(`^${pattern}$`, 'i')
+    const regex = new RegExp(`^${tempPattern}$`, 'i')
     const match = stepText.match(regex)
-    if (match) {
-      for (let i = 0; i < regexStrs.length; i++) {
-        values[regexStrs[i]] = match[i + 1] || ''
+    if (match && match.length > paramNames.length + 1) {
+      for (let i = 0; i < paramNames.length; i++) {
+        let rawValue = match[i + 1] || ''
+        // Strip surrounding quotes if present
+        rawValue = rawValue.replace(/^["']|["']$/g, '')
+        values[paramNames[i]] = rawValue
       }
     }
   } catch {}
@@ -930,7 +924,7 @@ function moveBackgroundStep(stepIdx: number, direction: number) {
   }
 }
 
-function onBackgroundStepDefChange(step: ScenarioStep, stepIdx: number) {
+function onBackgroundStepDefChange(step: ScenarioStep, _stepIdx: number) {
   step.matchedDef = stepDefinitions.value.find(s => s.id === step.stepDefId) || null
   if (step.matchedDef) {
     step.paramValues = {}
@@ -1107,28 +1101,33 @@ function removeExampleColumn(scenarioIdx: number, columnName: string) {
 }
 
 function onCodeEditorChange() {
+  // Sync from code to visual only when in code mode
+  // This prevents sync loop when switching modes
   if (editorMode.value === 'code') {
     syncFromCodeToVisual()
   }
 }
 
 // Watch for editor mode changes
-watch(editorMode, (newMode) => {
+watch(editorMode, async (newMode) => {
   if (newMode === 'visual') {
+    // Wait for DOM to update, then sync
+    await nextTick()
     syncFromCodeToVisual()
   }
 })
 
 // When opening modal, parse content
 watch(() => showFeatureModal.value, async (isOpen) => {
-  if (isOpen && editorMode.value === 'visual') {
-    // Wait a bit for everything to settle
+  if (isOpen) {
+    // Wait for DOM to settle
     await nextTick()
-    // Ensure step definitions are available
+    // Ensure step definitions are loaded before syncing
     if (stepDefinitions.value.length === 0) {
       await stepStore.fetchStepDefinitions(projectId)
     }
     await nextTick()
+    // Always sync to ensure visual editor is populated
     syncFromCodeToVisual()
   }
 })
@@ -1165,9 +1164,15 @@ async function openFeatureModal() {
   if (stepDefinitions.value.length === 0) {
     try {
       await stepStore.importFromLibrary(projectId, 'playwright')
+      await stepStore.fetchStepDefinitions(projectId)
     } catch { /* silently ignore if already imported */ }
   }
   showFeatureModal.value = true
+  // Wait for DOM update AND reactivity
+  await nextTick()
+  await nextTick()
+  // Force sync to ensure visual editor is populated
+  syncFromCodeToVisual()
 }
 
 function closeFeatureModal() {
@@ -1196,8 +1201,13 @@ async function editFeature(feature: Feature) {
       await stepStore.fetchStepDefinitions(projectId)
     } catch { /* ignore */ }
   }
-  // Open modal - watch will handle sync
+  // Open modal first
   showFeatureModal.value = true
+  // Wait for DOM update AND reactivity
+  await nextTick()
+  await nextTick()
+  // Force sync regardless of mode - this ensures visual editor is populated
+  syncFromCodeToVisual()
 }
 
 function confirmDeleteFeature(feature: Feature) {
