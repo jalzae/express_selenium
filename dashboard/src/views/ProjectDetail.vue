@@ -672,7 +672,17 @@ function syncFromCodeToVisual() {
       if (stepMatch) {
         const keyword = stepMatch[1] as ScenarioStep['keyword']
         const stepText = stepMatch[2].trim()
-        const matched = findMatchingStepDef(stepText)
+        let matched = findMatchingStepDef(stepText)
+        if (matched && (!matched.parameters || matched.parameters.length === 0)) {
+          const placeholderMatches = matched.gherkinPattern.match(/\{([^}]+)\}/g)
+          if (placeholderMatches) {
+            matched.parameters = placeholderMatches.map((name) => ({
+              name: name.replace(/[{}]/g, ''),
+              type: 'string' as const,
+              default: ''
+            }))
+          }
+        }
         backgroundSteps.value.push({
           keyword,
           stepDefId: matched?.id || '',
@@ -749,7 +759,17 @@ function syncFromCodeToVisual() {
       if (stepMatch) {
         const keyword = stepMatch[1] as ScenarioStep['keyword']
         const stepText = stepMatch[2].trim()
-        const matched = findMatchingStepDef(stepText)
+        let matched = findMatchingStepDef(stepText)
+        if (matched && (!matched.parameters || matched.parameters.length === 0)) {
+          const placeholderMatches = matched.gherkinPattern.match(/\{([^}]+)\}/g)
+          if (placeholderMatches) {
+            matched.parameters = placeholderMatches.map((name) => ({
+              name: name.replace(/[{}]/g, ''),
+              type: 'string' as const,
+              default: ''
+            }))
+          }
+        }
         steps.push({
           keyword,
           stepDefId: matched?.id || '',
@@ -825,38 +845,76 @@ function findMatchingStepDef(stepText: string): StepDefinition | null {
 }
 
 function extractParamValues(stepText: string, stepDef: StepDefinition | null): Record<string, string> {
-  if (!stepDef || !stepDef.parameters) return {}
+  if (!stepDef) return {}
 
   const values: Record<string, string> = {}
-  let pattern = stepDef.gherkinPattern
-  const paramNames: string[] = []
 
-  // Use a two-step approach to avoid escaping issues:
-  // 1. Replace parameters with temporary tokens BEFORE escaping
-  // 2. Escape special characters
-  // 3. Replace tokens with capture groups
-  let tempPattern = pattern
-  for (let i = 0; i < stepDef.parameters.length; i++) {
-    const param = stepDef.parameters[i]
-    tempPattern = tempPattern.replace(`{${param.name}}`, `__PARAM_${i}__`)
-    paramNames.push(param.name)
+  // If we have parameter metadata, use it
+  if (stepDef.parameters && stepDef.parameters.length > 0) {
+    let pattern = stepDef.gherkinPattern
+    const paramNames: string[] = []
+
+    // Replace parameters with temporary tokens BEFORE escaping
+    let tempPattern = pattern
+    for (let i = 0; i < stepDef.parameters.length; i++) {
+      const param = stepDef.parameters[i]
+      tempPattern = tempPattern.replace(`{${param.name}}`, `__PARAM_${i}__`)
+      paramNames.push(param.name)
+    }
+
+    // Escape special regex characters
+    tempPattern = tempPattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+
+    // Replace tokens with capture groups
+    tempPattern = tempPattern.replace(/__PARAM_(\d+)__/g, '(.+?)')
+
+    try {
+      const regex = new RegExp(`^${tempPattern}$`, 'i')
+      const match = stepText.match(regex)
+      if (match) {
+        for (let i = 0; i < paramNames.length; i++) {
+          let rawValue = match[i + 1] || ''
+          rawValue = rawValue.replace(/^["']|["']$/g, '')
+          values[paramNames[i]] = rawValue
+        }
+        return values
+      }
+    } catch {}
   }
 
-  // Now escape special regex characters
-  tempPattern = tempPattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+  // Fallback: extract values by pattern matching without parameter metadata
+  // This handles cases where parameters exist but aren't defined in metadata
+  let pattern = stepDef.gherkinPattern
 
-  // Replace tokens with capture groups (more permissive than findMatchingStepDef)
-  tempPattern = tempPattern.replace(/__PARAM_(\d+)__/g, '(.+?)')
+  // Count placeholders in pattern
+  const placeholderCount = (pattern.match(/\{[^}]+\}/g) || []).length
+
+  if (placeholderCount === 0) return values
+
+  // Escape special chars and replace placeholders with capture groups
+  let escapedPattern = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+  escapedPattern = escapedPattern.replace(/\\{([^}]+)\\}/g, '(?:"([^"]*)"|\'([^\']*)\'|([^\\s"]+(?:\\s+[^\\s"]+)*))')
 
   try {
-    const regex = new RegExp(`^${tempPattern}$`, 'i')
+    const regex = new RegExp(`^${escapedPattern}$`, 'i')
     const match = stepText.match(regex)
-    if (match && match.length > paramNames.length + 1) {
-      for (let i = 0; i < paramNames.length; i++) {
-        let rawValue = match[i + 1] || ''
-        // Strip surrounding quotes if present
-        rawValue = rawValue.replace(/^["']|["']$/g, '')
-        values[paramNames[i]] = rawValue
+
+    if (match) {
+      // Extract values from capture groups (group 1 = double quoted, 2 = single quoted, 3 = unquoted)
+      let paramIndex = 0
+      for (let i = 1; i < match.length; i += 3) {
+        if (i + 2 < match.length) {
+          const value = match[i] || match[i + 1] || match[i + 2] || ''
+          const paramNames = stepDef.parameters?.map(p => p.name) || []
+
+          if (paramIndex < paramNames.length) {
+            values[paramNames[paramIndex]] = value
+          } else {
+            // Generate param name if metadata missing
+            values[`param${paramIndex + 1}`] = value
+          }
+          paramIndex++
+        }
       }
     }
   } catch {}
@@ -927,6 +985,17 @@ function moveBackgroundStep(stepIdx: number, direction: number) {
 function onBackgroundStepDefChange(step: ScenarioStep, _stepIdx: number) {
   step.matchedDef = stepDefinitions.value.find(s => s.id === step.stepDefId) || null
   if (step.matchedDef) {
+    // Ensure parameters array is populated from pattern if missing
+    if (!step.matchedDef.parameters || step.matchedDef.parameters.length === 0) {
+      const placeholderMatches = step.matchedDef.gherkinPattern.match(/\{([^}]+)\}/g)
+      if (placeholderMatches) {
+        step.matchedDef.parameters = placeholderMatches.map((name) => ({
+          name: name.replace(/[{}]/g, ''),
+          default: ''
+        }))
+      }
+    }
+
     step.paramValues = {}
     if (step.matchedDef.parameters) {
       for (const param of step.matchedDef.parameters) {
@@ -1008,6 +1077,18 @@ function moveStep(scenarioIdx: number, stepIdx: number, direction: number) {
 function onStepDefChange(step: ScenarioStep, scenarioIdx: number, _stepIdx: number) {
   step.matchedDef = stepDefinitions.value.find(s => s.id === step.stepDefId) || null
   if (step.matchedDef) {
+    // Ensure parameters array is populated from pattern if missing
+    if (!step.matchedDef.parameters || step.matchedDef.parameters.length === 0) {
+      const placeholderMatches = step.matchedDef.gherkinPattern.match(/\{([^}]+)\}/g)
+      if (placeholderMatches) {
+        step.matchedDef.parameters = placeholderMatches.map((name, i) => ({
+          name: name.replace(/[{}]/g, ''),
+          type: 'string' as const,
+          default: ''
+        }))
+      }
+    }
+
     // Initialize param values with defaults
     step.paramValues = {}
     if (step.matchedDef.parameters) {
