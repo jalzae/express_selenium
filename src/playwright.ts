@@ -229,7 +229,7 @@ export async function input(page: Page, selector: string, value: string, clear =
  * Waits for the page 'load' event before returning.
  */
 export async function goTo(page: Page, url: string): Promise<void> {
-  await page.goto(url, { waitUntil: 'load' });
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
 }
 
 /**
