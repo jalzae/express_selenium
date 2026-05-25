@@ -14,47 +14,47 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 517624
+              "duration": 762166
             }
           },
           {
             "arguments": [],
             "keyword": "Given ",
             "line": 4,
-            "name": "I go to \"https://sit-web-commerce.rwgenting.com\"",
+            "name": "I go to \"https://sit-web-commerce.rwgenting.com/hotels\"",
             "match": {
               "location": "src/steps.ts:22"
             },
             "result": {
-              "status": "passed",
-              "duration": 4473142540
+              "status": "failed",
+              "duration": 5011560250,
+              "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/node_modules/@cucumber/cucumber/src/time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
             }
           },
           {
             "arguments": [],
             "keyword": "Then ",
             "line": 5,
-            "name": "I wait for element having css selector 'img[alt=\"Hotels\"]' to be visible",
+            "name": "I click on element having css selector 'div[tabindex=\"0\"]' with text \"25\"",
             "match": {
-              "location": "src/steps.ts:247"
+              "location": "src/steps.ts:89"
             },
             "result": {
-              "status": "passed",
-              "duration": 192671083
+              "status": "skipped",
+              "duration": 0
             }
           },
           {
             "arguments": [],
             "keyword": "Then ",
             "line": 6,
-            "name": "I click on element having css selector 'img[alt=\"Hotels\"]'",
+            "name": "I click on element having css selector 'div[tabindex=\"0\"]' with text \"28\"",
             "match": {
-              "location": "src/steps.ts:72"
+              "location": "src/steps.ts:89"
             },
             "result": {
-              "status": "failed",
-              "duration": 5003360707,
-              "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/node_modules/@cucumber/cucumber/src/time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
+              "status": "skipped",
+              "duration": 0
             }
           },
           {
@@ -62,7 +62,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 638667
+              "duration": 737333
             }
           }
         ],
@@ -75,6 +75,6 @@
     "keyword": "Feature",
     "name": "Book Hotel",
     "tags": [],
-    "uri": "test-results/1779704941147-156za6c9p/features/1779702393214-e9t2mwgf0.feature"
+    "uri": "test-results/1779705105011-8h4k6dr12/features/1779702393214-e9t2mwgf0.feature"
   }
 ]

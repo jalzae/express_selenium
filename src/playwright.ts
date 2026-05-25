@@ -196,11 +196,13 @@ export async function click(page: Page, selector: string): Promise<void> {
 }
 
 /**
- * Click element by CSS selector that contains specific text
+ * Click element by CSS selector that contains specific text (anywhere in subtree)
  */
 export async function clickByText(page: Page, selector: string, text: string): Promise<void> {
-  await waitUntilVisible(page, `css:${selector}`);
-  await page.locator(selector).filter({ hasText: text }).click();
+  // Use Playwright's :has-text() pseudo-class which searches entire subtree
+  const selectorWithText = `${selector}:has-text("${text}")`;
+  await waitUntilVisible(page, `css:${selectorWithText}`);
+  await page.click(selectorWithText);
 }
 
 /**
