@@ -36,6 +36,14 @@ export const useStepDefinitionStore = defineStore('stepDefinitions', () => {
     }
   }
 
+  async function fetchStepDefinition(id: string) {
+    const res = await fetch(`/api/step-definitions/${id}`)
+    if (res.ok) {
+      return await res.json()
+    }
+    throw new Error('Failed to fetch step definition')
+  }
+
   async function createStepDefinition(data: Partial<StepDefinition>) {
     const res = await fetch('/api/step-definitions', {
       method: 'POST',
@@ -122,6 +130,7 @@ export const useStepDefinitionStore = defineStore('stepDefinitions', () => {
     steps,
     loading,
     fetchStepDefinitions,
+    fetchStepDefinition,
     createStepDefinition,
     updateStepDefinition,
     deleteStepDefinition,

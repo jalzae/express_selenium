@@ -46,6 +46,21 @@ export const useProjectStore = defineStore('projects', () => {
     }
   }
 
+  async function fetchProject(id: string) {
+    const res = await fetch(`/api/projects/${id}`)
+    if (res.ok) {
+      const project = await res.json()
+      const idx = projects.value.findIndex(p => p.id === id)
+      if (idx !== -1) {
+        projects.value[idx] = project
+      } else {
+        projects.value.unshift(project)
+      }
+      return project
+    }
+    throw new Error('Failed to fetch project')
+  }
+
   async function fetchFeatures(projectId: string) {
     const res = await fetch(`/api/projects/${projectId}/features`)
     features.value[projectId] = await res.json()
@@ -138,6 +153,7 @@ export const useProjectStore = defineStore('projects', () => {
     features,
     loading,
     fetchProjects,
+    fetchProject,
     fetchFeatures,
     createProject,
     updateProject,

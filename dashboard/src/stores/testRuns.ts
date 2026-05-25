@@ -78,6 +78,31 @@ export const useTestRunStore = defineStore('testRuns', () => {
     }
   }
 
+  async function updateTestRun(id: string, data: Partial<TestRun>) {
+    const res = await fetch(`/api/test-runs/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      const idx = testRuns.value.findIndex(r => r.id === id)
+      if (idx !== -1) testRuns.value[idx] = updated
+      if (currentRun.value?.id === id) currentRun.value = updated
+      return updated
+    }
+    throw new Error('Failed to update test run')
+  }
+
+  async function fetchTestRunLogs(id: string) {
+    const res = await fetch(`/api/test-runs/${id}/logs`)
+    if (res.ok) {
+      const data = await res.json()
+      return data.logs || ''
+    }
+    throw new Error('Failed to fetch test run logs')
+  }
+
   function getStatusBadge(status: TestRun['status']) {
     const map = {
       pending: 'badge-info',
@@ -96,9 +121,11 @@ export const useTestRunStore = defineStore('testRuns', () => {
     fetchTestRuns,
     fetchTestRun,
     createTestRun,
+    updateTestRun,
     runTest,
     stopTest,
     deleteTestRun,
+    fetchTestRunLogs,
     getStatusBadge
   }
 })
