@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 762166
+              "duration": 577584
             }
           },
           {
@@ -27,7 +27,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 5011560250,
+              "duration": 5007051958,
               "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/node_modules/@cucumber/cucumber/src/time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
             }
           },
@@ -35,9 +35,22 @@
             "arguments": [],
             "keyword": "Then ",
             "line": 5,
-            "name": "I click on element having css selector 'div[tabindex=\"0\"]' with text \"25\"",
+            "name": "I wait for element having css selector 'div[tabindex=\"0\"]' to be visible",
             "match": {
-              "location": "src/steps.ts:89"
+              "location": "src/steps.ts:247"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 6,
+            "name": "I click on element having xpath '//div[@tabindex=\"0\"]//div[text()=\"25\"]'",
+            "match": {
+              "location": "src/steps.ts:77"
             },
             "result": {
               "status": "skipped",
@@ -47,10 +60,59 @@
           {
             "arguments": [],
             "keyword": "Then ",
-            "line": 6,
-            "name": "I click on element having css selector 'div[tabindex=\"0\"]' with text \"28\"",
+            "line": 7,
+            "name": "I wait 500 milliseconds",
             "match": {
-              "location": "src/steps.ts:89"
+              "location": "src/steps.ts:238"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 8,
+            "name": "I click on element having xpath '//div[@tabindex=\"0\"]//div[text()=\"28\"]'",
+            "match": {
+              "location": "src/steps.ts:77"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 9,
+            "name": "I click on element having xpath '//div[@tabindex=\"0\"]//div[text()=\"Search\"]'",
+            "match": {
+              "location": "src/steps.ts:77"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 10,
+            "name": "I wait for element having xpath '//img[@alt=\"hotel logo\" and contains(@src,\"first_world_hotel\")]/ancestor::div[3]//div[text()=\"Select\"]' to be visible",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 11,
+            "name": "I click on element having xpath '//img[@alt=\"hotel logo\" and contains(@src,\"first_world_hotel\")]/ancestor::div[3]//div[text()=\"Select\"]'",
+            "match": {
+              "location": "src/steps.ts:77"
             },
             "result": {
               "status": "skipped",
@@ -62,7 +124,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 737333
+              "duration": 404583
             }
           }
         ],
@@ -75,6 +137,6 @@
     "keyword": "Feature",
     "name": "Book Hotel",
     "tags": [],
-    "uri": "test-results/1779705105011-8h4k6dr12/features/1779702393214-e9t2mwgf0.feature"
+    "uri": "test-results/1779706155569-f53fnz1es/features/1779702393214-e9t2mwgf0.feature"
   }
 ]

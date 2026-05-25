@@ -148,7 +148,7 @@
     <!-- Feature Modal -->
     <Teleport to="body">
       <div v-if="showFeatureModal" class="modal-overlay" @click.self="closeFeatureModal">
-        <div class="modal modal-xl">
+        <div class="modal modal-xxl">
           <div class="modal-header">
             <h3>{{ editingFeature ? 'Edit Feature' : 'New Feature' }}</h3>
             <button class="btn-icon" @click="closeFeatureModal">✕</button>
@@ -200,219 +200,36 @@ Example: I want to test the login functionality. User should be able to login wi
                   <span v-else-if="gherkinValid" class="success-text">✓ Valid ({{ stepMatchCount }}/{{ totalSteps }} steps match)</span>
                 </label>
 
-                <!-- Toggle between editors -->
-                <div class="editor-toggle">
-                  <button type="button" :class="['tab-btn', { active: editorMode === 'visual' }]" @click="editorMode = 'visual'">
-                    📝 Visual Editor
-                  </button>
-                  <button type="button" :class="['tab-btn', { active: editorMode === 'code' }]" @click="editorMode = 'code'">
-                    💻 Code Editor
-                  </button>
-                </div>
-
-                <!-- Visual Editor: Line-by-line step editor -->
-                <div v-if="editorMode === 'visual'" class="visual-editor">
-                  <!-- Feature header -->
-                  <div class="feature-header-edit">
-                    <label for="visual-feature-name">Feature Name:</label>
-                    <input id="visual-feature-name" v-model="featureName" class="feature-name-input" placeholder="e.g., User Login" />
+                <!-- Boiler Plate Button -->
+                <div class="boilerplate-section">
+                  <div class="boilerplate-header">
+                    <button type="button" class="btn-sm btn-primary" @click="showBoilerplateMenu = !showBoilerplateMenu">
+                      📋 Gherkin Boiler Plate
+                    </button>
+                    <span v-if="selectedBoilerplate" class="selected-template">{{ selectedBoilerplate }}</span>
                   </div>
-                  <div class="feature-header-edit">
-                    <label for="visual-feature-desc">Description:</label>
-                    <textarea id="visual-feature-desc" v-model="featureDescription" rows="2" class="feature-desc-input" placeholder="As a user, I want to..."></textarea>
-                  </div>
-
-                  <!-- Background Section -->
-                  <div class="background-block">
-                    <div class="background-header">
-                      <h4>Background</h4>
-                      <span class="background-hint">Steps that run before each scenario</span>
-                    </div>
-                    <div class="steps-list">
-                      <div v-for="(step, stepIdx) in backgroundSteps" :key="`bg-${stepIdx}`" class="step-row">
-                        <select v-model="step.keyword" class="keyword-select">
-                          <option value="Given">Given</option>
-                          <option value="When">When</option>
-                          <option value="Then">Then</option>
-                          <option value="And">And</option>
-                          <option value="But">But</option>
-                        </select>
-
-                        <select v-model="step.stepDefId" @change="onBackgroundStepDefChange(step, stepIdx)" class="step-select">
-                          <option value="">Select step...</option>
-                          <option v-if="step.text && !step.matchedDef" value="" disabled class="step-unmatched-hint">
-                            ⚠️ {{ step.text }}
-                          </option>
-                          <optgroup v-for="cat in stepCategories" :key="cat.name" :label="cat.label">
-                            <option v-for="s in cat.steps" :key="s.id" :value="s.id">
-                              {{ s.name }}
-                            </option>
-                          </optgroup>
-                        </select>
-
-                        <div v-if="step.matchedDef" class="step-params-inline">
-                          <input v-for="param in step.matchedDef.parameters" :key="param.name"
-                            :placeholder="param.name"
-                            v-model="step.paramValues[param.name]"
-                            @input="updateBackgroundStepText(step)"
-                            class="param-input-inline" />
-                        </div>
-
-                        <button type="button" class="btn-icon" @click="removeBackgroundStep(stepIdx)" title="Remove step">✕</button>
-                        <button type="button" class="btn-icon" @click="moveBackgroundStep(stepIdx, -1)" title="Move up">↑</button>
-                        <button type="button" class="btn-icon" @click="moveBackgroundStep(stepIdx, 1)" title="Move down">↓</button>
-
-                        <span v-if="step.matchedDef" class="step-status valid">✓</span>
-                        <span v-else class="step-status invalid">⚠️</span>
-                      </div>
-
-                      <button type="button" class="btn-sm btn-secondary add-step-btn" @click="addBackgroundStep">
-                        + Add Background Step
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Scenarios -->
-                  <div v-for="(scenario, sIdx) in scenarios" :key="sIdx" class="scenario-block">
-                    <div class="scenario-header">
-                      <div class="scenario-type-toggle">
-                        <label class="checkbox-label-inline">
-                          <input type="checkbox" v-model="scenario.isOutline" @change="toggleScenarioOutline(sIdx)" />
-                          <span>Scenario Outline</span>
-                        </label>
-                      </div>
-                      <input v-model="scenario.name" placeholder="Scenario name" class="scenario-name-input" />
-                      <button type="button" class="btn-icon btn-error" @click="removeScenario(sIdx)" title="Delete scenario">🗑️</button>
-                    </div>
-
-                    <!-- Steps -->
-                    <div class="steps-list">
-                      <div v-for="(step, stepIdx) in scenario.steps" :key="stepIdx" class="step-row">
-                        <select v-model="step.keyword" class="keyword-select">
-                          <option value="Given">Given</option>
-                          <option value="When">When</option>
-                          <option value="Then">Then</option>
-                          <option value="And">And</option>
-                          <option value="But">But</option>
-                        </select>
-
-                        <select v-model="step.stepDefId" @change="onStepDefChange(step, sIdx, stepIdx)" class="step-select">
-                          <option value="">Select step...</option>
-                          <!-- Show raw parsed text as hint when step has text but no match -->
-                          <option v-if="step.text && !step.matchedDef" value="" disabled class="step-unmatched-hint">
-                            ⚠️ {{ step.text }}
-                          </option>
-                          <optgroup v-for="cat in stepCategories" :key="cat.name" :label="cat.label">
-                            <option v-for="s in cat.steps" :key="s.id" :value="s.id">
-                              {{ s.name }}
-                            </option>
-                          </optgroup>
-                        </select>
-
-                        <!-- Parameter inputs for selected step -->
-                        <div v-if="step.matchedDef" class="step-params-inline">
-                          <input v-for="param in step.matchedDef.parameters" :key="param.name"
-                            :placeholder="scenario.isOutline ? `<${param.name}>` : param.name"
-                            v-model="step.paramValues[param.name]"
-                            @input="updateStepText(step)"
-                            class="param-input-inline" />
-                        </div>
-
-                        <button type="button" class="btn-icon" @click="removeStep(sIdx, stepIdx)" title="Remove step">✕</button>
-                        <button type="button" class="btn-icon" @click="moveStep(sIdx, stepIdx, -1)" title="Move up">↑</button>
-                        <button type="button" class="btn-icon" @click="moveStep(sIdx, stepIdx, 1)" title="Move down">↓</button>
-
-                        <!-- Validation status -->
-                        <span v-if="step.matchedDef" class="step-status valid">✓</span>
-                        <span v-else class="step-status invalid">⚠️</span>
-                      </div>
-
-                      <button type="button" class="btn-sm btn-secondary add-step-btn" @click="addStep(sIdx)">
-                        + Add Step
-                      </button>
-                    </div>
-
-                    <!-- Examples Table for Scenario Outline -->
-                    <div v-if="scenario.isOutline" class="examples-section">
-                      <div class="examples-header">
-                        <h4>Examples</h4>
-                        <div class="examples-actions">
-                          <input
-                            v-if="scenario.examples.length > 0"
-                            v-model="newColumnName[sIdx]"
-                            placeholder="New column name"
-                            class="column-name-input"
-                            @keyup.enter="addExampleColumn(sIdx, newColumnName[sIdx]); newColumnName[sIdx] = ''"
-                          />
-                          <button
-                            type="button"
-                            class="btn-sm btn-secondary"
-                            @click="addExampleColumn(sIdx, newColumnName[sIdx]); newColumnName[sIdx] = ''"
-                            :disabled="!newColumnName[sIdx]?.trim()"
-                          >
-                            + Column
-                          </button>
-                          <button type="button" class="btn-sm btn-primary" @click="addExampleRow(sIdx)">
-                            + Row
-                          </button>
-                        </div>
-                      </div>
-
-                      <div v-if="scenario.examples.length === 0" class="examples-empty">
-                        <p>No examples yet. Add columns based on your step parameters, then add test data rows.</p>
-                        <button type="button" class="btn-sm btn-secondary" @click="addExampleRow(sIdx)">
-                          Initialize Examples Table
+                  <div v-if="showBoilerplateMenu" class="boilerplate-menu">
+                    <div class="boilerplate-category" v-for="cat in boilerplateCategories" :key="cat.name">
+                      <h5>{{ cat.label }}</h5>
+                      <div class="boilerplate-templates">
+                        <button
+                          v-for="tpl in cat.templates"
+                          :key="tpl.name"
+                          type="button"
+                          class="boilerplate-btn"
+                          @click="applyBoilerplate(tpl)"
+                        >
+                          <span class="template-icon">{{ tpl.icon }}</span>
+                          <span class="template-name">{{ tpl.name }}</span>
+                          <span class="template-desc">{{ tpl.description }}</span>
                         </button>
                       </div>
-
-                      <div v-else class="examples-table-wrapper">
-                        <table class="examples-table">
-                          <thead>
-                            <tr>
-                              <th v-for="header in getExampleHeaders(scenario)" :key="header" class="examples-header-cell">
-                                <div class="header-cell-content">
-                                  <span>{{ header }}</span>
-                                  <button
-                                    type="button"
-                                    class="btn-icon-small"
-                                    @click="removeExampleColumn(sIdx, header)"
-                                    title="Remove column"
-                                  >✕</button>
-                                </div>
-                              </th>
-                              <th class="actions-header">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr v-for="(row, rowIdx) in scenario.examples" :key="rowIdx">
-                              <td v-for="header in getExampleHeaders(scenario)" :key="header" class="examples-cell">
-                                <input
-                                  v-model="row[header]"
-                                  @input="syncFromVisualToCode"
-                                  class="example-cell-input"
-                                  :placeholder="`Enter ${header}`"
-                                />
-                              </td>
-                              <td class="examples-cell-actions">
-                                <button
-                                  type="button"
-                                  class="btn-icon-small btn-error"
-                                  @click="removeExampleRow(sIdx, rowIdx)"
-                                  title="Remove row"
-                                >🗑️</button>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
                     </div>
                   </div>
-
-                  <button type="button" class="btn-primary" @click="addScenario">+ Add Scenario</button>
                 </div>
 
                 <!-- Code Editor: Raw Gherkin textarea -->
-                <div v-else class="gherkin-editor">
+                <div class="gherkin-editor">
                   <textarea v-model="featureForm.content" @input="onCodeEditorChange" rows="16" required
                     placeholder="Feature: Login Functionality
 
@@ -541,6 +358,248 @@ const takeScreenshots = ref(true)
 const aiGenerating = ref(false)
 const aiDescription = ref('')
 const dragIdx = ref<number | null>(null)
+const showBoilerplateMenu = ref(false)
+const selectedBoilerplate = ref('')
+
+// Boiler Plate Templates
+interface BoilerplateTemplate {
+  name: string
+  description: string
+  icon: string
+  content: string
+}
+
+interface BoilerplateCategory {
+  name: string
+  label: string
+  templates: BoilerplateTemplate[]
+}
+
+const boilerplateCategories: BoilerplateCategory[] = [
+  {
+    name: 'login',
+    label: '🔐 Login & Authentication',
+    templates: [
+      {
+        name: 'Basic Login',
+        description: 'Simple login form test',
+        icon: '🔑',
+        content: `Feature: User Login
+  As a registered user
+  I want to login to my account
+  So that I can access my dashboard
+
+  Scenario: Successful login with valid credentials
+    Given I navigate to "https://example.com/login"
+    When I enter "user@example.com" into input field having id "email"
+    And I enter "password123" into input field having id "password"
+    And I click on element having css selector "button[type='submit']"
+    Then the URL should contain "/dashboard"
+    And I should see "Welcome" text on page
+
+  Scenario: Login with invalid credentials
+    Given I navigate to "https://example.com/login"
+    When I enter "invalid@example.com" into input field having id "email"
+    And I enter "wrongpassword" into input field having id "password"
+    And I click on element having css selector "button[type='submit']"
+    Then I should see "Invalid credentials" text on page
+    And element having id "email" should be visible
+
+  Scenario: Login with empty fields
+    Given I navigate to "https://example.com/login"
+    When I click on element having css selector "button[type='submit']"
+    Then I should see "Email is required" text on page`
+      },
+      {
+        name: 'Login with Scenario Outline',
+        description: 'Data-driven login tests',
+        icon: '📊',
+        content: `Feature: User Login Data Driven
+  As a registered user
+  I want to login with different credentials
+  So that I can verify the login functionality
+
+  Scenario Outline: Login with different credentials
+    Given I navigate to "https://example.com/login"
+    When I enter "<email>" into input field having id "email"
+    And I enter "<password>" into input field having id "password"
+    And I click on element having css selector "button[type='submit']"
+    Then I should see "<message>" text on page
+
+    Examples:
+      | email                | password     | message                   |
+      | user@example.com     | pass123      | Welcome                   |
+      | invalid@example.com  | wrongpass    | Invalid credentials       |
+      |                      | pass123      | Email is required         |
+      | user@example.com     |              | Password is required      |`
+      }
+    ]
+  },
+  {
+    name: 'forms',
+    label: '📝 Form Testing',
+    templates: [
+      {
+        name: 'Contact Form',
+        description: 'Complete contact form submission',
+        icon: '✉️',
+        content: `Feature: Contact Form
+  As a website visitor
+  I want to submit a contact form
+  So that I can reach out to the support team
+
+  Scenario: Submit contact form with valid data
+    Given I navigate to "https://example.com/contact"
+    When I enter "John Doe" into input field having id "name"
+    And I enter "john@example.com" into input field having id "email"
+    And I enter "This is a test message" into input field having id "message"
+    And I click on element having id "submit-btn"
+    Then I should see "Thank you for contacting us" text on page
+
+  Scenario: Submit contact form with invalid email
+    Given I navigate to "https://example.com/contact"
+    When I enter "John Doe" into input field having id "name"
+    And I enter "invalid-email" into input field having id "email"
+    And I click on element having id "submit-btn"
+    Then I should see "Please enter a valid email" text on page`
+      },
+      {
+        name: 'Registration Form',
+        description: 'User registration flow',
+        icon: '📋',
+        content: `Feature: User Registration
+  As a new visitor
+  I want to register an account
+  So that I can access the platform features
+
+  Scenario: Register with valid data
+    Given I navigate to "https://example.com/register"
+    When I enter "newuser@example.com" into input field having id "email"
+    And I enter "JohnDoe123" into input field having id "username"
+    And I enter "SecurePass123!" into input field having id "password"
+    And I enter "SecurePass123!" into input field having id "confirm-password"
+    And I check checkbox having id "terms"
+    And I click on element having id "register-btn"
+    Then the URL should contain "/welcome"
+    And I should see "Registration successful" text on page
+
+  Scenario Outline: Password validation
+    Given I navigate to "https://example.com/register"
+    When I enter "test@example.com" into input field having id "email"
+    And I enter "<password>" into input field having id "password"
+    And I enter "<password>" into input field having id "confirm-password"
+    And I click on element having id "register-btn"
+    Then I should see "<errorMessage>" text on page
+
+    Examples:
+      | password     | errorMessage                           |
+      | 123          | Password must be at least 8 characters |
+      | pass         | Password must contain a number         |
+      | Password123  | Password must contain a special char   |`
+      }
+    ]
+  },
+  {
+    name: 'navigation',
+    label: '🧭 Navigation & Routing',
+    templates: [
+      {
+        name: 'Page Navigation',
+        description: 'Test navigation between pages',
+        icon: '🔗',
+        content: `Feature: Page Navigation
+  As a website user
+  I want to navigate between pages
+  So that I can access different sections
+
+  Background:
+    Given I navigate to "https://example.com"
+
+  Scenario: Navigate to About page
+    When I click on element having css selector "a[href='/about']"
+    Then the URL should be "https://example.com/about"
+    And element having id "about-content" should be visible
+
+  Scenario: Navigate using main menu
+    When I click on element having css selector "nav a[href='/products']"
+    Then the URL should contain "/products"
+    And I should see "Our Products" text on page
+
+  Scenario: Browser back button
+    Given I navigate to "https://example.com/products"
+    When I click on element having css selector "a[href='/about']"
+    And I go back in browser
+    Then the URL should contain "/products"`
+      },
+      {
+        name: 'Search & Filter',
+        description: 'Search functionality with filters',
+        icon: '🔍',
+        content: `Feature: Search and Filter
+  As a website user
+  I want to search and filter products
+  So that I can find what I'm looking for
+
+  Scenario: Search with keyword
+    Given I navigate to "https://example.com/products"
+    When I enter "laptop" into input field having id "search-input"
+    And I click on element having css selector "button[aria-label='Search']"
+    Then I should see "laptop" text on page
+    And there should be more than 0 elements with css selector ".product-card"
+
+  Scenario: Filter by category
+    Given I navigate to "https://example.com/products"
+    When I click on element having css selector "button[data-category='electronics']"
+    And I wait for element having id "products-grid" to be visible
+    Then element having id "category-badge" should be visible
+    And I should see "Electronics" text in element having id "category-badge"`
+      }
+    ]
+  },
+  {
+    name: 'ecommerce',
+    label: '🛒 E-commerce',
+    templates: [
+      {
+        name: 'Shopping Cart',
+        description: 'Add to cart and checkout flow',
+        icon: '🛒',
+        content: `Feature: Shopping Cart
+  As a customer
+  I want to add products to cart and checkout
+  So that I can complete my purchase
+
+  Scenario: Add product to cart
+    Given I navigate to "https://example.com/products/laptop-123"
+    When I click on element having id "add-to-cart-btn"
+    Then I should see "Added to cart" text on page
+    And element having id "cart-count" should be visible
+
+  Scenario: Complete checkout flow
+    Given I navigate to "https://example.com/cart"
+    When I click on element having css selector "button[data-test='checkout']"
+    And I enter "123 Main St" into input field having id "shipping-address"
+    And I enter "New York" into input field having id "city"
+    And I enter "10001" into input field having id "zip"
+    And I click on element having id "place-order-btn"
+    Then the URL should contain "/order-confirmation"
+    And I should see "Order placed successfully" text on page`
+      }
+    ]
+  }
+]
+
+function applyBoilerplate(tpl: BoilerplateTemplate) {
+  featureForm.content = tpl.content
+  selectedBoilerplate.value = tpl.name
+  showBoilerplateMenu.value = false
+  // Extract feature name for the form field
+  const match = tpl.content.match(/^Feature:\s*(.+?)(?:\n|$)/m)
+  if (match) {
+    featureForm.name = match[1].trim()
+  }
+  validateGherkin()
+}
 
 // Appium Server Status (for mobile projects)
 const appiumStatus = reactive({
@@ -688,238 +747,13 @@ const stepCategories = computed(() => {
   })).filter(c => c.steps.length > 0)
 })
 
-// Visual Editor state
-const editorMode = ref<'visual' | 'code'>('visual')
-const featureName = ref('')
-const featureDescription = ref('')
-const backgroundSteps = ref<ScenarioStep[]>([])
-const newColumnName = ref<Record<number, string>>({})
-
-interface ScenarioStep {
-  keyword: 'Given' | 'When' | 'Then' | 'And' | 'But'
-  stepDefId: string
-  matchedDef: StepDefinition | null
-  paramValues: Record<string, string>
-  text: string
-}
-
-interface ExampleRow {
-  [key: string]: string
-}
-
-interface Scenario {
-  name: string
-  isOutline: boolean
-  steps: ScenarioStep[]
-  examples: ExampleRow[]
-}
-
-const scenarios = ref<Scenario[]>([
-  { name: 'Example scenario', isOutline: false, steps: [], examples: [] }
-])
-
-// Sync between visual and code editor
+// Sync between visual and code editor (removed - code editor only)
 function syncFromCodeToVisual() {
-  const content = featureForm.content.trim()
-  if (!content) {
-    scenarios.value = [{ name: 'New Scenario', isOutline: false, steps: [], examples: [] }]
-    featureName.value = ''
-    featureDescription.value = ''
-    backgroundSteps.value = []
-    return
-  }
-
-  // Parse Feature name
-  const featureMatch = content.match(/^Feature:\s*(.+?)(?:\n|$)/i)
-  if (featureMatch) featureName.value = featureMatch[1].trim()
-
-  // Parse content between Feature and first Scenario/Background
-  const lines = content.split('\n')
-  const descLines: string[] = []
-  let backgroundStartIdx = -1
-  let firstScenarioIdx = -1
-
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i]
-    if (line.match(/^\s*Background:/i)) {
-      backgroundStartIdx = i
-      // Don't break - continue to find Scenario
-      continue
-    }
-    if (line.match(/^\s*Scenario(?:\s+Outline)?:/i)) {
-      firstScenarioIdx = i
-      break
-    }
-    // Only add to description if we haven't found Background yet
-    if (backgroundStartIdx === -1 && line.trim() && !line.match(/^As a|I want|So that/)) {
-      descLines.push(line.trim())
-    }
-  }
-  featureDescription.value = descLines.join('\n')
-
-  // Parse Background steps if exists
-  backgroundSteps.value = []
-  if (backgroundStartIdx !== -1) {
-    const bgEndIdx = firstScenarioIdx !== -1 ? firstScenarioIdx : lines.length
-    for (let i = backgroundStartIdx + 1; i < bgEndIdx; i++) {
-      const line = lines[i]
-      const stepMatch = line.match(/^\s*(Given|When|Then|And|But)\s+(.+)$/i)
-      if (stepMatch) {
-        const keyword = stepMatch[1] as ScenarioStep['keyword']
-        const stepText = stepMatch[2].trim()
-        let matched = findMatchingStepDef(stepText)
-        if (matched && (!matched.parameters || matched.parameters.length === 0)) {
-          const placeholderMatches = matched.gherkinPattern.match(/\{([^}]+)\}/g)
-          if (placeholderMatches) {
-            matched.parameters = placeholderMatches.map((name) => ({
-              name: name.replace(/[{}]/g, ''),
-              type: 'string' as const,
-              default: ''
-            }))
-          }
-        }
-        backgroundSteps.value.push({
-          keyword,
-          stepDefId: matched?.id || '',
-          matchedDef: matched || null,
-          paramValues: extractParamValues(stepText, matched),
-          text: stepText
-        })
-      }
-    }
-  }
-
-  // Parse scenarios (including Scenario Outline)
-  const newScenarios: Scenario[] = []
-
-  // Find all Scenario/Scenario Outline positions using LINE indices (not character)
-  const scenarioMatches: { name: string; isOutline: boolean; lineIdx: number }[] = []
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    const scenarioMatch = line.match(/^\s*(Scenario(?:\s+Outline)?):\s*(.+?)$/i)
-    if (scenarioMatch) {
-      scenarioMatches.push({
-        name: scenarioMatch[2]?.trim() || `Scenario`,
-        isOutline: scenarioMatch[1]?.toLowerCase().includes('outline'),
-        lineIdx: i
-      })
-    }
-  }
-
-  // Parse each scenario
-  for (let i = 0; i < scenarioMatches.length; i++) {
-    const { name: scenarioName, isOutline, lineIdx } = scenarioMatches[i]
-    const endLineIdx = i + 1 < scenarioMatches.length ? scenarioMatches[i + 1].lineIdx : lines.length
-
-    // Extract scenario content (from line AFTER scenario name to next scenario or end)
-    const blockLines = lines.slice(lineIdx + 1, endLineIdx)
-
-    const steps: ScenarioStep[] = []
-    const examples: ExampleRow[] = []
-    let inExamples = false
-    let exampleHeaders: string[] = []
-
-    for (const line of blockLines) {
-      // Skip empty lines and comments
-      if (!line.trim() || line.trim().startsWith('#')) {
-        continue
-      }
-
-      // Check for Examples section
-      if (line.match(/^\s*Examples:/i)) {
-        inExamples = true
-        continue
-      }
-
-      if (inExamples) {
-        // Parse examples table
-        const trimmedLine = line.trim()
-        if (trimmedLine.startsWith('|')) {
-          const cells = trimmedLine.split('|').map(c => c.trim()).filter(c => c)
-          if (exampleHeaders.length === 0) {
-            exampleHeaders = cells
-          } else if (cells.length === exampleHeaders.length) {
-            const row: ExampleRow = {}
-            exampleHeaders.forEach((header, idx) => {
-              row[header] = cells[idx] || ''
-            })
-            examples.push(row)
-          }
-        }
-        continue
-      }
-
-      const stepMatch = line.match(/^\s*(Given|When|Then|And|But)\s+(.+)$/i)
-      if (stepMatch) {
-        const keyword = stepMatch[1] as ScenarioStep['keyword']
-        const stepText = stepMatch[2].trim()
-        let matched = findMatchingStepDef(stepText)
-        if (matched && (!matched.parameters || matched.parameters.length === 0)) {
-          const placeholderMatches = matched.gherkinPattern.match(/\{([^}]+)\}/g)
-          if (placeholderMatches) {
-            matched.parameters = placeholderMatches.map((name) => ({
-              name: name.replace(/[{}]/g, ''),
-              type: 'string' as const,
-              default: ''
-            }))
-          }
-        }
-        steps.push({
-          keyword,
-          stepDefId: matched?.id || '',
-          matchedDef: matched || null,
-          paramValues: extractParamValues(stepText, matched),
-          text: stepText
-        })
-      }
-    }
-
-    newScenarios.push({ name: scenarioName, isOutline, steps, examples })
-  }
-
-  // Update scenarios - create new array reference to trigger reactivity
-  scenarios.value = newScenarios.length > 0 ? newScenarios : [{ name: 'New Scenario', isOutline: false, steps: [], examples: [] }]
+  // No-op - visual editor removed
 }
 
 function syncFromVisualToCode() {
-  let content = `Feature: ${featureName.value || 'New Feature'}\n`
-
-  if (featureDescription.value) {
-    content += `\n${featureDescription.value}\n`
-  }
-
-  // Add Background section if has steps
-  if (backgroundSteps.value.length > 0) {
-    content += `\n  Background:\n`
-    for (const step of backgroundSteps.value) {
-      content += `    ${step.keyword} ${step.text}\n`
-    }
-  }
-
-  for (const scenario of scenarios.value) {
-    if (scenario.isOutline) {
-      content += `\n  Scenario Outline: ${scenario.name}\n`
-    } else {
-      content += `\n  Scenario: ${scenario.name}\n`
-    }
-    for (const step of scenario.steps) {
-      content += `    ${step.keyword} ${step.text}\n`
-    }
-
-    // Add Examples table for Scenario Outline
-    if (scenario.isOutline && scenario.examples.length > 0) {
-      const headers = Object.keys(scenario.examples[0])
-      content += `\n    Examples:\n`
-      content += `      | ${headers.join(' | ')} |\n`
-      for (const row of scenario.examples) {
-        content += `      | ${headers.map(h => row[h]).join(' | ')} |\n`
-      }
-    }
-  }
-
-  featureForm.content = content
-  validateGherkin()
+  // No-op - visual editor removed
 }
 
 function findMatchingStepDef(stepText: string): StepDefinition | null {
@@ -1278,41 +1112,21 @@ function removeExampleColumn(scenarioIdx: number, columnName: string) {
 }
 
 function onCodeEditorChange() {
-  // Sync from code to visual only when in code mode
-  // This prevents sync loop when switching modes
-  if (editorMode.value === 'code') {
-    syncFromCodeToVisual()
-  }
+  // Just validate gherkin on code change
+  validateGherkin()
 }
 
-// Watch for editor mode changes
-watch(editorMode, async (newMode) => {
-  if (newMode === 'visual') {
-    // Wait for DOM to update, then sync
-    await nextTick()
-    syncFromCodeToVisual()
-  }
-})
-
-// When opening modal, parse content
+// When opening modal, ensure step definitions are loaded
 watch(() => showFeatureModal.value, async (isOpen) => {
   if (isOpen) {
     // Wait for DOM to settle
     await nextTick()
-    // Ensure step definitions are loaded before syncing
+    // Ensure step definitions are loaded
     if (stepDefinitions.value.length === 0) {
       await stepStore.fetchStepDefinitions(projectId)
     }
-    await nextTick()
-    // Always sync to ensure visual editor is populated
-    syncFromCodeToVisual()
-  }
-})
-
-// Re-sync when step definitions change (in case they were loaded after initial sync)
-watch(stepDefinitions, (newDefs) => {
-  if (showFeatureModal.value && editorMode.value === 'visual' && newDefs.length > 0) {
-    syncFromCodeToVisual()
+    // Validate current content
+    validateGherkin()
   }
 })
 
@@ -1345,11 +1159,11 @@ async function openFeatureModal() {
     } catch { /* silently ignore if already imported */ }
   }
   showFeatureModal.value = true
-  // Wait for DOM update AND reactivity
+  // Wait for DOM update
   await nextTick()
   await nextTick()
-  // Force sync to ensure visual editor is populated
-  syncFromCodeToVisual()
+  // Validate default content
+  validateGherkin()
 }
 
 function closeFeatureModal() {
@@ -1383,8 +1197,8 @@ async function editFeature(feature: Feature) {
   // Wait for DOM update AND reactivity
   await nextTick()
   await nextTick()
-  // Force sync regardless of mode - this ensures visual editor is populated
-  syncFromCodeToVisual()
+  // Validate the loaded content
+  validateGherkin()
 }
 
 function confirmDeleteFeature(feature: Feature) {
@@ -1392,10 +1206,8 @@ function confirmDeleteFeature(feature: Feature) {
 }
 
 async function saveFeature() {
-  // Sync from visual editor if in visual mode
-  if (editorMode.value === 'visual') {
-    syncFromVisualToCode()
-  }
+  // Validate before saving
+  validateGherkin()
   const data = { ...featureForm, projectId, enabled: featureForm.enabled ? 1 : 0 }
   if (editingFeature.value) {
     await projectStore.updateFeature(editingFeature.value.id, data)
@@ -2191,6 +2003,98 @@ watch(enabledFeatures, (newFeatures) => {
   width: auto;
 }
 
+/* Boiler Plate Section */
+.boilerplate-section {
+  margin-bottom: 1rem;
+}
+
+.boilerplate-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.selected-template {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+}
+
+.boilerplate-menu {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.boilerplate-category {
+  margin-bottom: 1rem;
+}
+
+.boilerplate-category:last-child {
+  margin-bottom: 0;
+}
+
+.boilerplate-category h5 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.boilerplate-templates {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+
+.boilerplate-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  width: 100%;
+}
+
+.boilerplate-btn:hover {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.template-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.template-name {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.template-desc {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 0.125rem;
+}
+
 /* AI Generator */
 .ai-generator {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
@@ -2504,6 +2408,13 @@ watch(enabledFeatures, (newFeatures) => {
   width: 95%;
 }
 
+/* Modal XXL - Extra Extra Large */
+.modal-xxl {
+  max-width: 95vw;
+  width: 95%;
+  height: 90vh;
+}
+
 /* Step Builder Section */
 .step-builder-section {
   background: var(--bg-tertiary);
@@ -2669,365 +2580,6 @@ watch(enabledFeatures, (newFeatures) => {
 
 .tab-btn:hover:not(.active) {
   background: var(--bg-tertiary);
-}
-
-/* Visual Editor */
-.visual-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.feature-header-edit {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.feature-header-edit label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.feature-name-input,
-.feature-desc-input {
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  background: var(--bg-primary);
-  font-size: 0.875rem;
-}
-
-.feature-desc-input {
-  resize: vertical;
-}
-
-/* Background Block */
-.background-block {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.background-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-.background-header h4 {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--accent);
-}
-
-.background-hint {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
-/* Scenario Block */
-.scenario-block {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-.scenario-header {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.scenario-name-input {
-  flex: 1;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  background: var(--bg-primary);
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-/* Steps List */
-.steps-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.step-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  flex-wrap: wrap;
-  transition: all 0.2s;
-}
-
-.step-row:hover {
-  border-color: var(--accent);
-  background: var(--bg-secondary);
-}
-
-.keyword-select {
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 0.25rem;
-  background: var(--bg-primary);
-  font-size: 0.8rem;
-  font-weight: 500;
-  min-width: 70px;
-}
-
-.step-select {
-  flex: 1;
-  min-width: 200px;
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  background: var(--bg-primary);
-  font-size: 0.85rem;
-  margin-bottom: 0.5rem;
-}
-
-/* Make select options scrollable by using size attribute for large lists */
-.step-select[size] {
-  height: auto;
-}
-
-.step-params-inline {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.param-input-inline {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  border-radius: 0.375rem;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
-  font-size: 0.85rem;
-  min-width: 120px;
-  font-family: monospace;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.param-input-inline::placeholder {
-  color: var(--text-secondary);
-  opacity: 0.6;
-}
-
-.step-status {
-  font-size: 0.875rem;
-  width: 20px;
-  text-align: center;
-}
-
-.step-status.valid {
-  color: #10b981;
-}
-
-.step-status.invalid {
-  color: var(--error);
-}
-
-.add-step-btn {
-  margin-top: 0.5rem;
-}
-
-/* Scenario Type Toggle */
-.scenario-type-toggle {
-  display: flex;
-  align-items: center;
-}
-
-.checkbox-label-inline {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.checkbox-label-inline input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-/* Examples Section */
-.examples-section {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
-}
-
-.examples-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.examples-header h4 {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.examples-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.column-name-input {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 0.25rem;
-  background: var(--bg-primary);
-  font-size: 0.8rem;
-  min-width: 120px;
-}
-
-.examples-empty {
-  text-align: center;
-  padding: 1.5rem;
-  background: var(--bg-tertiary);
-  border-radius: 0.5rem;
-  color: var(--text-secondary);
-}
-
-.examples-empty p {
-  margin: 0 0 1rem 0;
-  font-size: 0.875rem;
-}
-
-.examples-table-wrapper {
-  overflow-x: auto;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-}
-
-.examples-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.examples-header-cell {
-  background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  padding: 0;
-  font-weight: 600;
-}
-
-.examples-header-cell:last-child {
-  border-right: none;
-}
-
-.header-cell-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  gap: 0.5rem;
-}
-
-.actions-header {
-  background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border);
-  padding: 0.5rem;
-  font-weight: 600;
-  width: 60px;
-  text-align: center;
-}
-
-.examples-cell {
-  border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  padding: 0;
-}
-
-.examples-cell:last-child {
-  border-right: none;
-}
-
-.example-cell-input {
-  width: 100%;
-  padding: 0.5rem;
-  border: none;
-  background: transparent;
-  font-size: 0.875rem;
-  font-family: inherit;
-}
-
-.example-cell-input:focus {
-  outline: none;
-  background: var(--bg-tertiary);
-}
-
-.examples-cell-actions {
-  border-bottom: 1px solid var(--border);
-  padding: 0.5rem;
-  text-align: center;
-  width: 60px;
-}
-
-.btn-icon-small {
-  background: none;
-  border: none;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  padding: 0.25rem;
-  cursor: pointer;
-  border-radius: 0.25rem;
-  transition: all 0.2s;
-}
-
-.btn-icon-small:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.btn-icon-small.btn-error:hover {
-  background: rgba(239, 68, 68, 0.2);
-  color: var(--error);
-}
-
-/* Step builder param rows use column layout */
-.step-builder .param-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 0.5rem;
-}
-
-.step-builder .param-row label {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
 }
 
 /* Appium Server Status */
