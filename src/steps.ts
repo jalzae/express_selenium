@@ -86,6 +86,12 @@ When('I click on element having name {string}', async function (name: string) {
   await pw.click(page, `name:${name}`);
 });
 
+When('I click on element having css selector {string} with text {string}', async function (selector: string, text: string) {
+  if (!page) throw new Error('Browser not initialized. Call "I navigate to" first.');
+  await pw.waitUntilVisible(page, `css:${selector}`);
+  await page.locator(selector).filter({ hasText: text }).click();
+});
+
 When('I double click on element having id {string}', async function (id: string) {
   if (!page) throw new Error('Browser not initialized. Call "I navigate to" first.');
   await pw.doubleClick(page, `id:${id}`);
@@ -236,6 +242,16 @@ When('I wait {int} milliseconds', async function (ms: number) {
 When('I wait for element having id {string} to be visible', async function (id: string) {
   if (!page) throw new Error('Browser not initialized.');
   await pw.waitUntilVisible(page, `id:${id}`);
+});
+
+When('I wait for element having css selector {string} to be visible', async function (selector: string) {
+  if (!page) throw new Error('Browser not initialized.');
+  await pw.waitUntilVisible(page, `css:${selector}`);
+});
+
+When('I wait for element having name {string} to be visible', async function (name: string) {
+  if (!page) throw new Error('Browser not initialized.');
+  await pw.waitUntilVisible(page, `name:${name}`);
 });
 
 When('I wait for element having id {string} to be hidden', async function (id: string) {

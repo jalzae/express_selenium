@@ -422,16 +422,42 @@ Example: I want to test the login functionality. User should be able to login wi
     And I click on element having css selector &quot;button[type='submit']&quot;
     Then the URL should contain &quot;/dashboard&quot;"></textarea>
                   <div class="gherkin-sidebar">
-                   
+                    <!-- Step Library Search -->
+                    <div class="step-library-search">
+                      <input
+                        v-model="stepSearchQuery"
+                        type="text"
+                        placeholder="Search steps..."
+                        class="search-input"
+                      />
+                    </div>
 
                     <!-- Validation Errors -->
                     <div v-if="invalidSteps.length > 0" class="validation-errors">
                       <h4>⚠️ Invalid Steps</h4>
                       <div v-for="(err, idx) in invalidSteps" :key="idx" class="error-item">{{ err }}</div>
                     </div>
-                    <div v-else-if="validStepsList.length > 0" class="valid-steps">
-                      <h4>✓ Valid Steps</h4>
-                      <div v-for="(step, idx) in validStepsList.slice(0, 5)" :key="idx" class="valid-item">{{ step }}</div>
+
+                    <!-- Step Library by Category -->
+                    <div class="step-library">
+                      <div v-for="cat in filteredStepCategories" :key="cat.name" class="step-category">
+                        <h5 @click="toggleCategory(cat.name)" :class="{ 'collapsed': collapsedCategories.has(cat.name) }">
+                          <span class="category-icon">{{ collapsedCategories.has(cat.name) ? '▶' : '▼' }}</span>
+                          {{ cat.label }} ({{ cat.steps.length }})
+                        </h5>
+                        <div v-show="!collapsedCategories.has(cat.name)" class="step-list">
+                          <div
+                            v-for="step in cat.steps"
+                            :key="step.id"
+                            @click="insertStepFromLibrary(step)"
+                            class="step-library-item"
+                            :title="step.description || step.gherkinPattern"
+                          >
+                            <code class="step-pattern">{{ step.gherkinPattern }}</code>
+                            <span v-if="step.description" class="step-desc">{{ step.description }}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <!-- Quick Reference -->
@@ -564,6 +590,75 @@ const invalidSteps = ref<string[]>([])
 const validStepsList = ref<string[]>([])
 const stepMatchCount = ref(0)
 const totalSteps = ref(0)
+
+// Step Library for code editor
+const stepSearchQuery = ref('')
+const collapsedCategories = ref<Set<string>>(new Set())
+
+const filteredStepCategories = computed(() => {
+  const query = stepSearchQuery.value.toLowerCase().trim()
+  return stepCategories.value.map(cat => {
+    const filteredSteps = query
+      ? cat.steps.filter(s =>
+          s.gherkinPattern.toLowerCase().includes(query) ||
+          s.description?.toLowerCase().includes(query)
+        )
+      : cat.steps
+    return { ...cat, steps: filteredSteps }
+  }).filter(c => c.steps.length > 0)
+})
+
+function toggleCategory(name: string) {
+  const set = collapsedCategories.value
+  if (set.has(name)) {
+    set.delete(name)
+  } else {
+    set.add(name)
+  }
+  collapsedCategories.value = new Set(set)
+}
+
+function insertStepFromLibrary(stepDef: StepDefinition) {
+  // Determine keyword (default to And if there's already content)
+  const content = featureForm.content.trim()
+  const keyword = content.length > 0 ? '  And' : '  When'
+
+  // Build step text with default/example values
+  let stepText = stepDef.gherkinPattern
+  if (stepDef.parameters && stepDef.parameters.length > 0) {
+    for (const param of stepDef.parameters) {
+      const exampleValue = param.default || getExampleValue(param.type)
+      stepText = stepText.replace(`{${param.name}}`, exampleValue)
+    }
+  }
+
+  // Append to content
+  featureForm.content += `\n${keyword} ${stepText}`
+
+  // Trigger validation
+  validateGherkin()
+
+  // Focus textarea
+  nextTick(() => {
+    const textarea = document.querySelector('.gherkin-editor textarea') as HTMLTextAreaElement
+    if (textarea) {
+      textarea.focus()
+      textarea.scrollTop = textarea.scrollHeight
+    }
+  })
+}
+
+function getExampleValue(type: string): string {
+  const examples: Record<string, string> = {
+    'string': '"example"',
+    'number': '123',
+    'url': '"https://example.com"',
+    'id': '"element-id"',
+    'selector': '".my-class"',
+    'css': '"button[type=\'submit\']"'
+  }
+  return examples[type] || examples['string']
+}
 
 const filteredStepDefs = computed(() => {
   let steps = stepDefinitions.value
@@ -2241,6 +2336,117 @@ watch(enabledFeatures, (newFeatures) => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* Step Library Search */
+.step-library-search {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  z-index: 10;
+  padding: 0.5rem 0;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--bg-primary);
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Step Library */
+.step-library {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.step-category {
+  background: var(--bg-tertiary);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.step-category h5 {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: var(--bg-secondary);
+  transition: background 0.2s;
+}
+
+.step-category h5:hover {
+  background: var(--bg-tertiary);
+}
+
+.category-icon {
+  font-size: 0.65rem;
+  transition: transform 0.2s;
+}
+
+.step-category h5.collapsed .category-icon {
+  transform: rotate(-90deg);
+}
+
+.step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.step-library-item {
+  padding: 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.step-library-item:hover {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+}
+
+.step-pattern {
+  display: block;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.7rem;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.step-desc {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Step Builder */

@@ -196,6 +196,14 @@ export async function click(page: Page, selector: string): Promise<void> {
 }
 
 /**
+ * Click element by CSS selector that contains specific text
+ */
+export async function clickByText(page: Page, selector: string, text: string): Promise<void> {
+  await waitUntilVisible(page, `css:${selector}`);
+  await page.locator(selector).filter({ hasText: text }).click();
+}
+
+/**
  * Focus element (optional clear)
  */
 export async function focus(page: Page, selector: string, clear = false): Promise<void> {

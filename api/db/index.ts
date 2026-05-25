@@ -11,4 +11,4 @@ const connection = mysql.createPool({
   multipleStatements: true,
 });
 
-export const db = drizzle(connection, { schema });
+export const db = drizzle(connection, { schema, mode: 'default' });
