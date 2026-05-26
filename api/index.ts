@@ -4,9 +4,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from 'dotenv';
 import { spawn } from 'node:child_process';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { db } from './db';
-import { projects, features, testRuns, stepDefinitions, scenarioSteps } from './db/schema';
+import { projects, features, testRuns, stepDefinitions } from './db/schema';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,6 +56,17 @@ app.use('/screenshots', express.static(path.join(__dirname, '../dashboard/public
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
+function now() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const seconds = String(d.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
 function parseProject(project: any) {
   const parsed = { ...project };
   if (parsed.mobileConfig) {
@@ -76,6 +87,7 @@ app.get('/api/projects', async (req, res) => {
     const allProjects = await db.select().from(projects).orderBy(desc(projects.createdAt));
     res.json(allProjects.map(parseProject));
   } catch (err: any) {
+    console.error('[GET /api/projects] Error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -118,11 +130,12 @@ app.post('/api/projects', async (req, res) => {
   try {
     await db.insert(projects).values({
       id, name, type, baseUrl: baseUrl || null, mobileConfig: config,
-      createdAt: new Date(), updatedAt: new Date()
+      createdAt: now(), updatedAt: now()
     });
     const [project] = await db.select().from(projects).where(eq(projects.id, id));
     res.status(201).json(project);
   } catch (err: any) {
+    console.error('[POST /api/projects] Error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -147,7 +160,7 @@ app.put('/api/projects/:id', async (req, res) => {
     await db.update(projects)
       .set({
         name, type, baseUrl: baseUrl || null, mobileConfig: config,
-        updatedAt: new Date()
+        updatedAt: now()
       })
       .where(eq(projects.id, req.params.id));
 
@@ -202,7 +215,7 @@ app.post('/api/features', async (req, res) => {
     await db.insert(features).values({
       id, projectId, name, framework, description: description || null, content,
       enabled: enabled !== undefined ? (enabled ? 1 : 0) : 1,
-      createdAt: new Date(), updatedAt: new Date()
+      createdAt: now(), updatedAt: now()
     });
     const [feature] = await db.select().from(features).where(eq(features.id, id));
     res.status(201).json(feature);
@@ -219,7 +232,7 @@ app.put('/api/features/:id', async (req, res) => {
       .set({
         name, framework, description: description || null, content,
         enabled: enabled !== undefined ? (enabled ? 1 : 0) : 1,
-        updatedAt: new Date()
+        updatedAt: now()
       })
       .where(eq(features.id, req.params.id));
 
@@ -291,7 +304,7 @@ app.post('/api/step-definitions', async (req, res) => {
       parameters: parameters ? JSON.stringify(parameters) : null,
       description: description || null,
       enabled: enabled !== undefined ? (enabled ? 1 : 0) : 1,
-      createdAt: new Date(), updatedAt: new Date()
+      createdAt: now(), updatedAt: now()
     });
     const [step] = await db.select().from(stepDefinitions).where(eq(stepDefinitions.id, id));
     res.status(201).json(step);
@@ -310,7 +323,7 @@ app.put('/api/step-definitions/:id', async (req, res) => {
         parameters: parameters ? JSON.stringify(parameters) : null,
         description: description || null,
         enabled: enabled !== undefined ? (enabled ? 1 : 0) : 1,
-        updatedAt: new Date()
+        updatedAt: now()
       })
       .where(eq(stepDefinitions.id, req.params.id));
 
@@ -393,7 +406,7 @@ app.post('/api/projects/:projectId/step-definitions/import', async (req, res) =>
         id, projectId: req.params.projectId, name: step.name, category: step.category,
         gherkinPattern: step.gherkinPattern, playwrightFunction: step.playwrightFunction,
         parameters: JSON.stringify(step.parameters), description: step.description, enabled: 1,
-        createdAt: new Date(), updatedAt: new Date()
+        createdAt: now(), updatedAt: now()
       });
       imported.push({ id, ...step });
     } catch (e: any) {
@@ -508,9 +521,9 @@ app.patch('/api/test-runs/:id', async (req, res) => {
   if (status) {
     updates.status = status;
     if (status === 'running' && !req.body.startedAt) {
-      updates.startedAt = new Date();
+      updates.startedAt = now();
     } else if (['passed', 'failed', 'cancelled'].includes(status)) {
-      updates.completedAt = new Date();
+      updates.completedAt = now();
     }
   }
   if (recordingPath !== undefined) updates.recordingPath = recordingPath;
