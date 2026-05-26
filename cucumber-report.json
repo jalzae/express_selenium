@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 577584
+              "duration": 555124
             }
           },
           {
@@ -26,9 +26,8 @@
               "location": "src/steps.ts:22"
             },
             "result": {
-              "status": "failed",
-              "duration": 5007051958,
-              "error_message": "Error: function timed out, ensure the promise resolves within 5000 milliseconds\n    at Timeout.<anonymous> (/Users/applemacbookprom2/Project/Test/selenium_cucumber_gherkin_ts/node_modules/@cucumber/cucumber/src/time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
+              "status": "passed",
+              "duration": 3290141917
             }
           },
           {
@@ -40,21 +39,21 @@
               "location": "src/steps.ts:247"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 169442834
             }
           },
           {
             "arguments": [],
             "keyword": "When ",
             "line": 6,
-            "name": "I click on element having xpath '//div[@tabindex=\"0\"]//div[text()=\"25\"]'",
+            "name": "I click on element having xpath '//div[@tabindex=\"0\"]//div[text()=\"26\"]'",
             "match": {
               "location": "src/steps.ts:77"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 43395540
             }
           },
           {
@@ -66,8 +65,8 @@
               "location": "src/steps.ts:238"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 501219415
             }
           },
           {
@@ -79,8 +78,8 @@
               "location": "src/steps.ts:77"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 97542916
             }
           },
           {
@@ -92,8 +91,8 @@
               "location": "src/steps.ts:77"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 69371709
             }
           },
           {
@@ -124,7 +123,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 404583
+              "duration": 311542
             }
           }
         ],
@@ -137,6 +136,6 @@
     "keyword": "Feature",
     "name": "Book Hotel",
     "tags": [],
-    "uri": "test-results/1779706155569-f53fnz1es/features/1779702393214-e9t2mwgf0.feature"
+    "uri": "test-results/1779746407166-u4m950b84/features/1779702393214-e9t2mwgf0.feature"
   }
 ]

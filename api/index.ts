@@ -117,7 +117,8 @@ app.post('/api/projects', async (req, res) => {
 
   try {
     await db.insert(projects).values({
-      id, name, type, baseUrl: baseUrl || null, mobileConfig: config
+      id, name, type, baseUrl: baseUrl || null, mobileConfig: config,
+      createdAt: new Date(), updatedAt: new Date()
     });
     const [project] = await db.select().from(projects).where(eq(projects.id, id));
     res.status(201).json(project);
@@ -200,7 +201,8 @@ app.post('/api/features', async (req, res) => {
   try {
     await db.insert(features).values({
       id, projectId, name, framework, description: description || null, content,
-      enabled: enabled !== undefined ? (enabled ? 1 : 0) : 1
+      enabled: enabled !== undefined ? (enabled ? 1 : 0) : 1,
+      createdAt: new Date(), updatedAt: new Date()
     });
     const [feature] = await db.select().from(features).where(eq(features.id, id));
     res.status(201).json(feature);
@@ -288,7 +290,8 @@ app.post('/api/step-definitions', async (req, res) => {
       id, projectId, name, category: category || null, gherkinPattern, playwrightFunction,
       parameters: parameters ? JSON.stringify(parameters) : null,
       description: description || null,
-      enabled: enabled !== undefined ? (enabled ? 1 : 0) : 1
+      enabled: enabled !== undefined ? (enabled ? 1 : 0) : 1,
+      createdAt: new Date(), updatedAt: new Date()
     });
     const [step] = await db.select().from(stepDefinitions).where(eq(stepDefinitions.id, id));
     res.status(201).json(step);
@@ -389,7 +392,8 @@ app.post('/api/projects/:projectId/step-definitions/import', async (req, res) =>
       await db.insert(stepDefinitions).values({
         id, projectId: req.params.projectId, name: step.name, category: step.category,
         gherkinPattern: step.gherkinPattern, playwrightFunction: step.playwrightFunction,
-        parameters: JSON.stringify(step.parameters), description: step.description, enabled: 1
+        parameters: JSON.stringify(step.parameters), description: step.description, enabled: 1,
+        createdAt: new Date(), updatedAt: new Date()
       });
       imported.push({ id, ...step });
     } catch (e: any) {
